@@ -1,4 +1,12 @@
 {
+  "v0": 1,
+  "网页": 2,
+  "ai工具": 4,
+  "magic-pattern": 1,
+  "mobbin": 1,
+  "ui设计": 1,
+  "chatprd": 1,
+  "prd": 1,
   "next-js": 6,
   "tailwind": 3,
   "guide": 5,
