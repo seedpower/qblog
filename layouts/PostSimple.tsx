@@ -2,6 +2,7 @@ import { ReactNode } from 'react'
 import { formatDate } from 'pliny/utils/formatDate'
 import { CoreContent } from 'pliny/utils/contentlayer'
 import type { Authors, Blog } from 'contentlayer/generated'
+import ArticleTOC from '@/components/ArticleTOC'
 import Comments from '@/components/Comments'
 import Link from '@/components/Link'
 import PageTitle from '@/components/PageTitle'
@@ -18,11 +19,12 @@ interface LayoutProps {
 }
 
 export default function PostLayout({ content, authorDetails, next, prev, children }: LayoutProps) {
-  const { path, slug, date, title } = content
+  const { path, slug, date, title, toc } = content
 
   return (
     <SectionContainer>
       <ScrollTopAndComment />
+      {toc && toc.length > 0 && <ArticleTOC toc={toc} />}
       <article>
         <div>
           <header>
