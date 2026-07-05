@@ -9,6 +9,7 @@ import PageTitle from '@/components/PageTitle'
 import SectionContainer from '@/components/SectionContainer'
 import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
+import YouTubeEmbed from '@/components/YouTubeEmbed'
 
 interface LayoutProps {
   content: CoreContent<Blog>
@@ -19,7 +20,7 @@ interface LayoutProps {
 }
 
 export default function PostLayout({ content, authorDetails, next, prev, children }: LayoutProps) {
-  const { path, slug, date, title, toc } = content
+  const { path, slug, date, title, toc, youtube } = content
 
   return (
     <SectionContainer>
@@ -47,7 +48,14 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
           </header>
           <div className="grid-rows-[auto_1fr] divide-y divide-gray-200 pb-8 xl:divide-y-0 dark:divide-gray-700">
             <div className="divide-y divide-gray-200 xl:col-span-3 xl:row-span-2 xl:pb-0 dark:divide-gray-700">
-              <div className="prose dark:prose-invert max-w-none pt-10 pb-8">{children}</div>
+              {youtube && (
+                <div className="pt-10 pb-8">
+                  <YouTubeEmbed url={youtube} title={title} />
+                </div>
+              )}
+              <div className={`prose dark:prose-invert max-w-none pb-8 ${youtube ? '' : 'pt-10'}`}>
+                {children}
+              </div>
             </div>
             {siteMetadata.comments && (
               <div className="pt-6 pb-6 text-center text-gray-700 dark:text-gray-300" id="comment">
