@@ -127,8 +127,7 @@ export default function ListLayoutWithTags({
           <div>
             <ul>
               {displayPosts.map((post) => {
-                const { path, date, title, summary, tags, images } = post
-                const coverImage = images?.length ? images[0] : siteMetadata.socialBanner
+                const { path, date, title, summary, tags, coverImage } = post
                 return (
                   <li key={path} className="py-5">
                     <article className="flex gap-4 sm:gap-6">

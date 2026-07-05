@@ -22,8 +22,7 @@ export default function Home({ posts }) {
         <ul className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
           {!posts.length && 'No posts found.'}
           {posts.slice(0, MAX_DISPLAY).map((post) => {
-            const { slug, date, title, summary, tags, images } = post
-            const coverImage = images?.length ? images[0] : '/static/images/twitter-card.png'
+            const { slug, date, title, summary, tags, coverImage } = post
             return (
               <li key={slug}>
                 <article className="flex flex-col gap-3">

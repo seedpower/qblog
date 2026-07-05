@@ -80,6 +80,18 @@ async function createTagCount(allBlogs) {
   writeFileSync('./app/tag-data.json', formatted)
 }
 
+function resolvePostImages(images: unknown): string[] {
+  if (!images) return []
+  if (typeof images === 'string') return [images]
+  if (Array.isArray(images) && images.length > 0) return images as string[]
+  return []
+}
+
+function resolveCoverImage(doc: { images?: unknown }): string {
+  const images = resolvePostImages(doc.images)
+  return images[0] ?? siteMetadata.postDefaultCover
+}
+
 function createSearchIndex(allBlogs) {
   if (
     siteMetadata?.search?.provider === 'kbar' &&
@@ -113,6 +125,10 @@ export const Blog = defineDocumentType(() => ({
   },
   computedFields: {
     ...computedFields,
+    coverImage: {
+      type: 'string',
+      resolve: (doc) => resolveCoverImage(doc),
+    },
     structuredData: {
       type: 'json',
       resolve: (doc) => ({
@@ -122,7 +138,7 @@ export const Blog = defineDocumentType(() => ({
         datePublished: doc.date,
         dateModified: doc.lastmod || doc.date,
         description: doc.summary,
-        image: doc.images ? doc.images[0] : siteMetadata.socialBanner,
+        image: resolveCoverImage(doc),
         url: `${siteMetadata.siteUrl}/${doc._raw.flattenedPath}`,
       }),
     },
