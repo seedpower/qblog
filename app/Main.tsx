@@ -40,10 +40,7 @@ export default function Home({ posts }) {
                   </Link>
                   <div className="flex min-w-0 flex-col gap-1">
                     <h2 className="line-clamp-2 text-base leading-snug font-semibold tracking-tight">
-                      <Link
-                        href={`/blog/${slug}`}
-                        className="text-gray-900 dark:text-gray-100"
-                      >
+                      <Link href={`/blog/${slug}`} className="text-gray-900 dark:text-gray-100">
                         {title}
                       </Link>
                     </h2>
