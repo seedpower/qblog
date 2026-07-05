@@ -18,7 +18,7 @@ export default function ArticleTOC({ toc }: ArticleTOCProps) {
   return (
     <aside
       aria-label="Table of contents"
-      className="fixed top-28 z-0 hidden max-h-[calc(100vh-7rem)] w-52 overflow-y-auto 2xl:block 2xl:left-[calc(50%+34rem)]"
+      className="fixed top-28 left-[calc(50%+34rem)] z-0 hidden max-h-[calc(100vh-7rem)] w-52 overflow-y-auto 2xl:block"
     >
       <p className="mb-3 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
         目录
