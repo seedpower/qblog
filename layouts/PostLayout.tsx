@@ -10,6 +10,7 @@ import Tag from '@/components/Tag'
 import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
 import YouTubeEmbed from '@/components/YouTubeEmbed'
+import BuyMeACoffee from '@/components/BuyMeACoffee'
 
 const editUrl = (path) => `${siteMetadata.siteRepo}/blob/main/data/${path}`
 const discussUrl = (path) =>
@@ -103,6 +104,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
               <div className={`prose dark:prose-invert max-w-none pb-8 ${youtube ? '' : 'pt-10'}`}>
                 {children}
               </div>
+              {siteMetadata.buymeacoffee && <BuyMeACoffee />}
               <div className="pt-6 pb-6 text-sm text-gray-700 dark:text-gray-300">
                 <Link href={discussUrl(path)} rel="nofollow">
                   Discuss on Twitter

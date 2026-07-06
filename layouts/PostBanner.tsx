@@ -10,6 +10,7 @@ import SectionContainer from '@/components/SectionContainer'
 import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
 import YouTubeEmbed from '@/components/YouTubeEmbed'
+import BuyMeACoffee from '@/components/BuyMeACoffee'
 
 interface LayoutProps {
   content: CoreContent<Blog>
@@ -44,6 +45,7 @@ export default function PostMinimal({ content, next, prev, children }: LayoutPro
             </div>
           )}
           <div className="prose dark:prose-invert max-w-none py-4">{children}</div>
+          {siteMetadata.buymeacoffee && <BuyMeACoffee />}
           {siteMetadata.comments && (
             <div className="pt-6 pb-6 text-center text-gray-700 dark:text-gray-300" id="comment">
               <Comments slug={slug} />

@@ -17,6 +17,7 @@ const siteMetadata = {
   twitter: 'https://x.com/chaowei2048',
   // facebook: 'https://facebook.com',
   youtube: 'https://www.youtube.com/@chaowei2048',
+  buymeacoffee: 'https://buymeacoffee.com/chaowei2048',
   // linkedin: 'https://www.linkedin.com',
   // threads: 'https://www.threads.net',
   // instagram: 'https://www.instagram.com',
