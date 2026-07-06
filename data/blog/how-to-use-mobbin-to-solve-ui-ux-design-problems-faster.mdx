@@ -31,7 +31,25 @@ images: ['/static/covers/how-to-use-mobbin-to-solve-ui-ux-design-problems-faster
 
 ## 典型工作流
 
-![](https://substack-post-media.s3.amazonaws.com/public/images/135acc0d-4e55-4224-a56a-9e88bece5e24_1799x1045.png)
+```mermaid
+flowchart TD
+    A[开始：需要 UI/UX 灵感] --> B[打开 Mobbin 平台]
+    B --> C{搜索方式}
+    C -->|按分类| M[浏览分类 - AI、商务]
+    C -->|按应用| D[浏览应用 - Airbnb、Spotify]
+    C -->|按流程| E[浏览用户流程 - 引导、结算]
+    C -->|按组件| F[浏览 UI 模式 - 按钮、弹窗]
+    
+    D --> G[查看界面与流程]
+    E --> G
+    F --> G
+    M --> G
+    
+    G --> H[收藏并创建合集]
+    H --> I[整理设计参考]
+    I --> J[在自有项目中应用洞察]
+    J --> K[结束：更优的 UI/UX 设计]
+```
 
 ## 示例：搜索与浏览应用
 

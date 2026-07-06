@@ -28,7 +28,20 @@ images: ['/static/covers/how-to-use-chatprd-to-generate-prd.png']
 
 ## 典型工作流
 
-![](https://substack-post-media.s3.amazonaws.com/public/images/4453a1a8-0ecd-4d4a-952e-f49d9b36ac0b_726x815.png)
+```mermaid
+flowchart TD
+    A[收集产品需求] --> B[输入 ChatPRD]
+    B --> C[选择模板或自定义]
+    C --> D[AI 自动生成 PRD]
+    D --> E[团队协作与评论]
+    E --> F[需求优化与编辑]
+    F --> G[生成原型/流程图]
+    G --> H[导出文档或集成项目管理工具]
+    H --> I[完成 PRD]
+    
+    %% 可选反馈循环
+    F --> D
+```
 
 ## 示例：为知识工作者设计一款 Markdown 笔记应用
 

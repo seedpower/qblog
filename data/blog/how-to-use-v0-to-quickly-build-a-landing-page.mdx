@@ -35,14 +35,16 @@ images: ['/static/covers/how-to-use-v0-to-quickly-build-a-landing-page.png']
 
 ```mermaid
 flowchart TD
-    A[Christmas] -->|Get money| B(Go shopping)
-    B --> C{Let me think}
-    C -->|One| D[Laptop]
-    C -->|Two| E[iPhone]
-    C -->|Three| F[fa:fa-car Car]
+    A[开始：有一个软件想法] --> B[注册 / 登录 v0.app]
+    B --> C[用自然语言描述软件需求]
+    C --> D[v0 处理提示词]
+    D --> E[v0 生成可运行的软件代码]
+    E --> F[审查并测试软件]
+    F --> G[优化描述以改进软件]
+    G --> D
+    F --> H[发布软件]
+    H --> I[结束]
 ```
-
-![](https://substack-post-media.s3.amazonaws.com/public/images/3bb907fd-8db7-4662-b86d-9f90e83d4f58_828x722.png)
 
 ## 示例：快速构建落地页
 
