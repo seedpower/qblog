@@ -1,5 +1,5 @@
 import TOCInline from 'pliny/ui/TOCInline'
-import Pre from 'pliny/ui/Pre'
+import PreWithMermaid from './PreWithMermaid'
 import BlogNewsletterForm from 'pliny/ui/BlogNewsletterForm'
 import type { MDXComponents } from 'mdx/types'
 import MDXImage from './MDXImage'
@@ -12,7 +12,7 @@ export const components: MDXComponents = {
   img: MDXZoomableImg,
   TOCInline,
   a: CustomLink,
-  pre: Pre,
+  pre: PreWithMermaid,
   table: TableWrapper,
   BlogNewsletterForm,
 }

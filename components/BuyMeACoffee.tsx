@@ -13,17 +13,19 @@ export default function BuyMeACoffee() {
 
   return (
     <div className="flex flex-col items-center justify-center">
-      <div className="text-center text-gray-700 dark:text-gray-300 my-2">如果文章内容对你有帮助，欢迎打赏支持作者继续创作</div>
+      <div className="my-2 text-center text-gray-700 dark:text-gray-300">
+        如果文章内容对你有帮助，欢迎打赏支持作者继续创作
+      </div>
       <div className="">
-      <a
-        href={buymeacoffee}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Buy me a coffee"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={buttonImageUrl} alt="Buy me a coffee" width={217} height={60} />
-      </a>
+        <a
+          href={buymeacoffee}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Buy me a coffee"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={buttonImageUrl} alt="Buy me a coffee" width={217} height={60} />
+        </a>
       </div>
     </div>
   )
