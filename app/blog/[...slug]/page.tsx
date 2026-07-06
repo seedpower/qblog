@@ -12,6 +12,7 @@ import PostLayout from '@/layouts/PostLayout'
 import PostBanner from '@/layouts/PostBanner'
 import { Metadata } from 'next'
 import siteMetadata from '@/data/siteMetadata'
+import { resolveBlogImageSrc } from '@/utils/resolveBlogImageSrc'
 import { notFound } from 'next/navigation'
 
 const defaultLayout = 'PostSimple'
@@ -39,12 +40,13 @@ export async function generateMetadata(props: {
   const publishedAt = new Date(post.date).toISOString()
   const modifiedAt = new Date(post.lastmod || post.date).toISOString()
   const authors = authorDetails.map((author) => author.name)
-  const imageList =
+  const rawImageList =
     post.images && (typeof post.images === 'string' || post.images.length > 0)
       ? typeof post.images === 'string'
         ? [post.images]
         : post.images
       : [post.coverImage]
+  const imageList = rawImageList.map((img) => resolveBlogImageSrc(img, post.path) ?? img)
   const ogImages = imageList.map((img) => {
     return {
       url: img && img.includes('http') ? img : siteMetadata.siteUrl + img,

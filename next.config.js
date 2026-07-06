@@ -1,4 +1,5 @@
 const { withContentlayer } = require('next-contentlayer2')
+const siteMetadata = require('./data/siteMetadata')
 
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
@@ -58,6 +59,14 @@ const output = process.env.EXPORT ? 'export' : undefined
 const basePath = process.env.BASE_PATH || undefined
 const unoptimized = process.env.UNOPTIMIZED ? true : undefined
 
+const staticCdnHostname = (() => {
+  try {
+    return new URL(siteMetadata.staticCdn).hostname
+  } catch {
+    return undefined
+  }
+})()
+
 /**
  * @type {import('next/dist/next-server/server/config').NextConfig}
  **/
@@ -84,6 +93,14 @@ module.exports = () => {
           protocol: 'https',
           hostname: 'picsum.photos',
         },
+        ...(staticCdnHostname
+          ? [
+              {
+                protocol: 'https',
+                hostname: staticCdnHostname,
+              },
+            ]
+          : []),
       ],
       unoptimized,
     },

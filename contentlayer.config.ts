@@ -23,6 +23,7 @@ import rehypeCitation from 'rehype-citation'
 import rehypePrismPlus from 'rehype-prism-plus'
 import rehypePresetMinify from 'rehype-preset-minify'
 import siteMetadata from './data/siteMetadata'
+import { resolveBlogImageSrc } from './utils/resolveBlogImageSrc'
 import { allCoreContent, sortPosts } from 'pliny/utils/contentlayer.js'
 import prettier from 'prettier'
 
@@ -87,8 +88,11 @@ function resolvePostImages(images: unknown): string[] {
   return []
 }
 
-function resolveCoverImage(doc: { images?: unknown }): string {
-  const images = resolvePostImages(doc.images)
+function resolveCoverImage(doc: { images?: unknown; _raw: { flattenedPath: string } }): string {
+  const blogPath = doc._raw.flattenedPath
+  const images = resolvePostImages(doc.images).map(
+    (img) => resolveBlogImageSrc(img, blogPath) ?? img
+  )
   return images[0] ?? siteMetadata.postDefaultCover
 }
 
