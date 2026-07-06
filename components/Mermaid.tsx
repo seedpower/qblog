@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef } from 'react'
 import { useTheme } from 'next-themes'
 import mermaid from 'mermaid'
+import { getMermaidConfig } from './mermaidConfig'
 
 interface MermaidProps {
   chart: string
@@ -19,11 +20,7 @@ export default function Mermaid({ chart }: MermaidProps) {
 
     let cancelled = false
 
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: resolvedTheme === 'dark' ? 'dark' : 'default',
-      securityLevel: 'loose',
-    })
+    mermaid.initialize(getMermaidConfig(resolvedTheme === 'dark'))
 
     const renderChart = async () => {
       try {
