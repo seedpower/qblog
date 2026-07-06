@@ -7,12 +7,23 @@ import MDXZoomableImg from './MDXZoomableImg'
 import CustomLink from './Link'
 import TableWrapper from './TableWrapper'
 
-export const components: MDXComponents = {
+const baseComponents: MDXComponents = {
   Image: MDXImage,
-  img: MDXZoomableImg,
   TOCInline,
   a: CustomLink,
   pre: PreWithMermaid,
   table: TableWrapper,
   BlogNewsletterForm,
+}
+
+export const components: MDXComponents = {
+  ...baseComponents,
+  img: MDXZoomableImg,
+}
+
+export function createMDXComponents(blogPath?: string): MDXComponents {
+  return {
+    ...baseComponents,
+    img: (props) => <MDXZoomableImg {...props} blogPath={blogPath} />,
+  }
 }
