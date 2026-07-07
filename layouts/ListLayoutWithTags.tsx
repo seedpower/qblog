@@ -136,7 +136,7 @@ export default function ListLayoutWithTags({
                         className="shrink-0"
                         aria-label={`View post: ${title}`}
                       >
-                        <div className="relative h-24 w-32 overflow-hidden rounded-lg sm:h-28 sm:w-40">
+                        <div className="relative aspect-video w-32 overflow-hidden rounded-lg sm:w-40">
                           <Image
                             src={coverImage}
                             alt={title}
