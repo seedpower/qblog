@@ -2,7 +2,7 @@
 const siteMetadata = {
   title: 'Chaowei 超维',
   author: 'Chaowei',
-  headerTitle: 'Chaowei 超维',
+  headerTitle: '超维博客',
   description: '最新技术资讯，产品使用教程，生活分享',
   language: 'zh-CN',
   theme: 'system', // system, dark or light
