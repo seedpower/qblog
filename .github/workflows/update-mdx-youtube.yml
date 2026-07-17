@@ -1,0 +1,146 @@
+# Update an MDX post's frontmatter `youtube` field by matching `title`.
+# Trigger via UI, gh CLI, or GitHub API (workflow_dispatch).
+#
+# Example (gh CLI):
+#   gh workflow run update-mdx-youtube.yml \
+#     -f title='如何使用 ChatPRD 生成产品需求文档（PRD）' \
+#     -f youtube_url='https://www.youtube.com/watch?v=XXXX'
+#
+# Example (API):
+#   curl -X POST \
+#     -H "Authorization: Bearer $GITHUB_TOKEN" \
+#     -H "Accept: application/vnd.github+json" \
+#     https://api.github.com/repos/OWNER/REPO/actions/workflows/update-mdx-youtube.yml/dispatches \
+#     -d '{"ref":"main","inputs":{"title":"...","youtube_url":"https://..."}}'
+name: Update MDX YouTube URL
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'Post title to match (exact match against frontmatter title)'
+        required: true
+        type: string
+      youtube_url:
+        description: 'YouTube URL to set in frontmatter'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-mdx-youtube-${{ github.event.inputs.title }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Find MDX and set youtube
+        id: update
+        env:
+          TITLE: ${{ inputs.title }}
+          YOUTUBE_URL: ${{ inputs.youtube_url }}
+        run: |
+          python3 <<'PY'
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          title = os.environ["TITLE"].strip()
+          youtube_url = os.environ["YOUTUBE_URL"].strip()
+
+          if not title:
+              print("::error::title is empty")
+              sys.exit(1)
+          if not youtube_url:
+              print("::error::youtube_url is empty")
+              sys.exit(1)
+
+          blog_root = Path("data/blog")
+          if not blog_root.is_dir():
+              print(f"::error::{blog_root} not found")
+              sys.exit(1)
+
+          title_re = re.compile(
+              r'^title:\s*(?P<q>["\'])?(?P<value>.*?)(?P=q)?\s*$',
+              re.MULTILINE,
+          )
+          youtube_re = re.compile(r'^youtube:\s*.*$', re.MULTILINE)
+
+          matches = []
+          for path in sorted(blog_root.rglob("*.mdx")):
+              text = path.read_text(encoding="utf-8")
+              if not text.startswith("---"):
+                  continue
+              end = text.find("\n---", 3)
+              if end == -1:
+                  continue
+              frontmatter = text[3:end]
+              m = title_re.search(frontmatter)
+              if not m:
+                  continue
+              file_title = m.group("value").strip()
+              if file_title == title:
+                  matches.append(path)
+
+          if not matches:
+              print(f"::error::No MDX file found with title: {title!r}")
+              sys.exit(1)
+          if len(matches) > 1:
+              listed = "\n".join(f"  - {p}" for p in matches)
+              print(f"::error::Multiple MDX files matched title {title!r}:\n{listed}")
+              sys.exit(1)
+
+          path = matches[0]
+          text = path.read_text(encoding="utf-8")
+          end = text.find("\n---", 3)
+          frontmatter = text[3:end]
+          body = text[end + 1 :]  # starts with "---\n..."
+
+          youtube_line = f"youtube: {youtube_url}"
+          if youtube_re.search(frontmatter):
+              new_frontmatter = youtube_re.sub(youtube_line, frontmatter, count=1)
+          else:
+              # Insert before closing frontmatter; keep a trailing newline
+              fm = frontmatter.rstrip("\n")
+              new_frontmatter = f"{fm}\n{youtube_line}\n"
+
+          new_text = f"---{new_frontmatter}{body}"
+          if new_text == text:
+              print(f"No change needed for {path} (youtube already set)")
+              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+                  out.write("changed=false\n")
+                  out.write(f"file={path}\n")
+              sys.exit(0)
+
+          path.write_text(new_text, encoding="utf-8")
+          print(f"Updated {path}")
+          print(f"  title: {title}")
+          print(f"  youtube: {youtube_url}")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write("changed=true\n")
+              out.write(f"file={path}\n")
+          PY
+
+      - name: Commit and push
+        if: steps.update.outputs.changed == 'true'
+        env:
+          TITLE: ${{ inputs.title }}
+          FILE: ${{ steps.update.outputs.file }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$FILE"
+          git commit -m "$(cat <<EOF
+          chore: set youtube URL for post "${TITLE}"
+
+          Updated via workflow_dispatch.
+          EOF
+          )"
+          git push
