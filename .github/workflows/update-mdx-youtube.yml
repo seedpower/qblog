@@ -100,6 +100,8 @@ jobs:
           path = matches[0]
           text = path.read_text(encoding="utf-8")
           end = text.find("\n---", 3)
+          # Slice excludes the newline before closing ---, so the last
+          # frontmatter field has no trailing \n. Always re-add it on write.
           frontmatter = text[3:end]
           body = text[end + 1 :]  # starts with "---\n..."
 
@@ -107,10 +109,9 @@ jobs:
           if youtube_re.search(frontmatter):
               new_frontmatter = youtube_re.sub(youtube_line, frontmatter, count=1)
           else:
-              # Insert before closing frontmatter; keep a trailing newline
-              fm = frontmatter.rstrip("\n")
-              new_frontmatter = f"{fm}\n{youtube_line}\n"
+              new_frontmatter = frontmatter.rstrip("\n") + f"\n{youtube_line}"
 
+          new_frontmatter = new_frontmatter.rstrip("\n") + "\n"
           new_text = f"---{new_frontmatter}{body}"
           if new_text == text:
               print(f"No change needed for {path} (youtube already set)")
