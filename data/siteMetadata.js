@@ -1,12 +1,12 @@
 /** @type {import("pliny/config").PlinyConfig } */
 const siteMetadata = {
-  title: 'Chaowei 超维',
+  title: 'Seedpower Blog',
   author: 'Chaowei',
-  headerTitle: '超维博客',
+  headerTitle: 'Seedpower Blog',
   description: '最新技术资讯，产品使用教程，生活分享',
   language: 'zh-CN',
   theme: 'system', // system, dark or light
-  siteUrl: 'https://www.chaowei2048.com',
+  siteUrl: 'https://blog.seedpower.app',
   staticCdn: 'https://static.chaowei2048.com',
   // siteRepo: 'https://github.com/timlrx/tailwind-nextjs-starter-blog',
   siteLogo: `${process.env.BASE_PATH || ''}/static/images/logo.png`,
