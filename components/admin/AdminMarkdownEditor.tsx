@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import dynamic from 'next/dynamic'
 import '@/css/admin-markdown-editor.css'
@@ -574,13 +574,18 @@ export default function AdminMarkdownEditor({
     [hideReview, updateMeta]
   )
 
+  const keepSelection = useCallback((e: MouseEvent) => {
+    e.preventDefault()
+  }, [])
+
   const bubble = mounted
     ? createPortal(
         <div
           ref={bubbleRef}
           className={`admin-md-bubble${bubbleVisible ? '' : ' hidden'}`}
           style={{ left: bubbleStyle.left, top: bubbleStyle.top }}
-          onMouseDown={(e) => e.preventDefault()}
+          role="toolbar"
+          aria-label="AI text assist"
         >
           <div className="admin-md-bubble-actions">
             {BUBBLE_ACTIONS.map(({ action, label }) => (
@@ -589,6 +594,7 @@ export default function AdminMarkdownEditor({
                 type="button"
                 className="admin-md-bubble-btn"
                 disabled={busy}
+                onMouseDown={keepSelection}
                 onClick={() => runEdit(action)}
               >
                 {label}
@@ -602,6 +608,7 @@ export default function AdminMarkdownEditor({
               onChange={(e) => setInstruction(e.target.value)}
               placeholder="Custom instruction…"
               disabled={busy}
+              onMouseDown={keepSelection}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
@@ -619,6 +626,7 @@ export default function AdminMarkdownEditor({
               type="button"
               className="admin-md-bubble-run"
               disabled={busy}
+              onMouseDown={keepSelection}
               onClick={() => {
                 const text = instruction.trim()
                 if (!text) {
@@ -643,7 +651,8 @@ export default function AdminMarkdownEditor({
           ref={reviewRef}
           className={`admin-md-review${reviewVisible ? '' : ' hidden'}`}
           style={{ left: reviewStyle.left, top: reviewStyle.top }}
-          onMouseDown={(e) => e.preventDefault()}
+          role="status"
+          aria-live="polite"
         >
           <span className="admin-md-review-label">
             AI edit ready{highlightRange ? ` · ${highlightRange.end - highlightRange.start} chars` : ''}
@@ -651,6 +660,7 @@ export default function AdminMarkdownEditor({
           <button
             type="button"
             className="rounded-full bg-gradient-to-b from-[#3d9dff] to-[#0a76e6] px-3 py-1 text-xs font-semibold text-white"
+            onMouseDown={keepSelection}
             onClick={acceptPending}
           >
             Accept
@@ -658,6 +668,7 @@ export default function AdminMarkdownEditor({
           <button
             type="button"
             className="glass glass-pill px-3 py-1 text-xs text-[var(--ink-soft)]"
+            onMouseDown={keepSelection}
             onClick={() => {
               dismissPending(true)
               setEditorStatus('AI edit discarded.')
