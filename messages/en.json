@@ -3,7 +3,8 @@
     "home": "Home",
     "blog": "Blog",
     "apps": "Apps",
-    "about": "About"
+    "about": "About",
+    "admin": "Admin"
   },
   "home": {
     "latest": "Latest",

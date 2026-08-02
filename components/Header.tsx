@@ -3,13 +3,17 @@
 import siteMetadata from '@/data/siteMetadata'
 import headerNavLinks from '@/data/headerNavLinks'
 import Link from './Link'
+import NextLink from 'next/link'
 import MobileNav from './MobileNav'
 import ThemeSwitch from './ThemeSwitch'
 import SearchButton from './SearchButton'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useTranslations } from 'next-intl'
 
-const Header = () => {
+const navItemClass =
+  'rounded-full px-3 py-1.5 text-sm font-medium text-[var(--ink-soft)] transition hover:bg-white/55 hover:text-[var(--ink)] dark:hover:bg-white/12'
+
+export default function Header({ isAdmin = false }: { isAdmin?: boolean }) {
   const t = useTranslations('nav')
 
   return (
@@ -40,23 +44,22 @@ const Header = () => {
             {headerNavLinks
               .filter((link) => link.href !== '/')
               .map((link) => (
-                <Link
-                  key={link.titleKey}
-                  href={link.href}
-                  className="rounded-full px-3 py-1.5 text-sm font-medium text-[var(--ink-soft)] transition hover:bg-white/55 hover:text-[var(--ink)] dark:hover:bg-white/12"
-                >
+                <Link key={link.titleKey} href={link.href} className={navItemClass}>
                   {t(link.titleKey)}
                 </Link>
               ))}
+            {isAdmin && (
+              <NextLink href="/admin" className={navItemClass}>
+                {t('admin')}
+              </NextLink>
+            )}
           </nav>
           <LanguageSwitcher />
           <SearchButton />
           <ThemeSwitch />
-          <MobileNav />
+          <MobileNav isAdmin={isAdmin} />
         </div>
       </div>
     </header>
   )
 }
-
-export default Header

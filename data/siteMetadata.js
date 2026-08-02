@@ -13,7 +13,7 @@ const siteMetadata = {
   socialBanner: `${process.env.BASE_PATH || ''}/static/images/twitter-card.png`,
   postDefaultCover: `${process.env.BASE_PATH || ''}/static/images/post-default-cover.png`,
   // mastodon: 'https://mastodon.social/@mastodonuser',
-  x: 'https://x.com/chaowei2048',
+  x: 'https://x.com/seedpower_link',
   // email: 'address@yoursite.com',
   // github: 'https://github.com',
   // twitter: 'https://twitter.com/Twitter',

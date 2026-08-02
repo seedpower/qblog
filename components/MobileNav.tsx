@@ -4,10 +4,11 @@ import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/re
 import { disableBodyScroll, enableBodyScroll, clearAllBodyScrollLocks } from 'body-scroll-lock'
 import { Fragment, useState, useEffect, useRef } from 'react'
 import Link from './Link'
+import NextLink from 'next/link'
 import headerNavLinks from '@/data/headerNavLinks'
 import { useTranslations } from 'next-intl'
 
-const MobileNav = () => {
+const MobileNav = ({ isAdmin = false }: { isAdmin?: boolean }) => {
   const t = useTranslations('nav')
   const tCommon = useTranslations('common')
   const [navShow, setNavShow] = useState(false)
@@ -85,6 +86,15 @@ const MobileNav = () => {
                     {t(link.titleKey)}
                   </Link>
                 ))}
+                {isAdmin && (
+                  <NextLink
+                    href="/admin"
+                    className="mb-4 rounded-full px-3 py-2 text-2xl font-bold tracking-tight text-[var(--ink)] outline outline-0 transition hover:bg-white/55 dark:hover:bg-white/12"
+                    onClick={onToggleNav}
+                  >
+                    {t('admin')}
+                  </NextLink>
+                )}
               </nav>
 
               <button

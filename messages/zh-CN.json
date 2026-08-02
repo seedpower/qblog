@@ -3,7 +3,8 @@
     "home": "主页",
     "blog": "文章",
     "apps": "Apps",
-    "about": "关于"
+    "about": "关于",
+    "admin": "Admin"
   },
   "home": {
     "latest": "最新文章",
