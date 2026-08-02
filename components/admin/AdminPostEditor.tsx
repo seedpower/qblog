@@ -136,7 +136,7 @@ export default function AdminPostEditor({
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-2 py-6 sm:px-3 sm:py-8">
+    <div className="mx-auto w-full max-w-[96rem] px-2 py-6 sm:px-3 sm:py-8">
       <div className="glass glass-card mb-4 flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
         <h1 className="text-3xl font-bold tracking-tight text-[var(--ink)]">
           {isEdit ? 'Edit post' : 'New post'}

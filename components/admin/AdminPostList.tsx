@@ -81,8 +81,8 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
-      <div className="glass glass-card mb-6 flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-6">
+    <div className="mx-auto w-full max-w-[96rem] px-2 py-6 sm:px-3 sm:py-8">
+      <div className="glass glass-card mb-4 flex flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-5">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-[var(--ink)]">Posts</h1>
           <p className="mt-1 text-sm text-[var(--ink-soft)]">
