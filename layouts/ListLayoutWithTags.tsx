@@ -3,7 +3,7 @@
 import { usePathname } from '@/i18n/navigation'
 import { slug } from 'github-slugger'
 import { formatDate } from 'pliny/utils/formatDate'
-import Image from '@/components/Image'
+import CoverWithTitle from '@/components/CoverWithTitle'
 import Link from '@/components/Link'
 import Tag from '@/components/Tag'
 import type { PostListItem } from '@/lib/types'
@@ -138,11 +138,11 @@ export default function ListLayoutWithTags({
                         aria-label={t('viewPost', { title: postTitle })}
                       >
                         <div className="relative aspect-video w-32 overflow-hidden rounded-xl sm:w-40">
-                          <Image
+                          <CoverWithTitle
                             src={coverImage}
-                            alt={postTitle}
-                            fill
-                            className="object-cover"
+                            title={postTitle}
+                            variant="thumb"
+                            className="h-full w-full"
                             sizes="(max-width: 640px) 128px, 160px"
                           />
                         </div>

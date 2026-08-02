@@ -7,7 +7,6 @@ import PostLayout from '@/layouts/PostLayout'
 import PostBanner from '@/layouts/PostBanner'
 import { Metadata } from 'next'
 import siteMetadata from '@/data/siteMetadata'
-import { resolveBlogImageSrc } from '@/utils/resolveBlogImageSrc'
 import { notFound } from 'next/navigation'
 import { setRequestLocale } from 'next-intl/server'
 import { getAllPosts, getPostBySlug } from '@/lib/posts'
@@ -38,11 +37,12 @@ export async function generateMetadata(props: {
   const publishedAt = new Date(post.date).toISOString()
   const modifiedAt = new Date(post.lastmod || post.date).toISOString()
   const authors = authorDetails.map((author) => author!.name)
-  const rawImageList = post.images && post.images.length > 0 ? post.images : [post.coverImage]
-  const imageList = rawImageList.map((img) => resolveBlogImageSrc(img, post.path) ?? img)
-  const ogImages = imageList.map((img) => ({
-    url: img && img.includes('http') ? img : siteMetadata.siteUrl + img,
-  }))
+
+  // Social crawlers cannot see DOM title overlays — bake title into a dynamic OG image.
+  const ogImageUrl = `${siteMetadata.siteUrl.replace(/\/$/, '')}/api/og/?${new URLSearchParams({
+    slug,
+    locale,
+  }).toString()}`
 
   return {
     title: post.title,
@@ -56,14 +56,14 @@ export async function generateMetadata(props: {
       publishedTime: publishedAt,
       modifiedTime: modifiedAt,
       url: './',
-      images: ogImages,
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: post.title }],
       authors: authors.length > 0 ? authors : [siteMetadata.author],
     },
     twitter: {
       card: 'summary_large_image',
       title: post.title,
       description: post.summary,
-      images: imageList,
+      images: [ogImageUrl],
     },
   }
 }

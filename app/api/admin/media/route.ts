@@ -91,8 +91,8 @@ export async function POST(request: NextRequest) {
 
     const key = sanitizeObjectKey(`${prefix}${safeName}`)
     const buffer = Buffer.from(await file.arrayBuffer())
-    // cover.png is intentionally overwritten on regenerate — avoid long CDN TTL
-    const isMutableCover = safeName.toLowerCase() === 'cover.png'
+    // Regenerated covers overwrite the same key — avoid long CDN TTL
+    const isMutableCover = /^cover\.(png|jpe?g|webp)$/i.test(safeName)
     const uploaded = await uploadMediaObject({
       key,
       body: buffer,

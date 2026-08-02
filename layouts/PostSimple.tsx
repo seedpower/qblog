@@ -2,6 +2,7 @@ import { ReactNode } from 'react'
 import { formatDate } from 'pliny/utils/formatDate'
 import ArticleTOC from '@/components/ArticleTOC'
 import Comments from '@/components/Comments'
+import CoverWithTitle from '@/components/CoverWithTitle'
 import Link from '@/components/Link'
 import PageTitle from '@/components/PageTitle'
 import SectionContainer from '@/components/SectionContainer'
@@ -19,7 +20,7 @@ interface LayoutProps {
 }
 
 export default function PostLayout({ content, authorDetails, next, prev, children }: LayoutProps) {
-  const { path, slug, date, title, toc, youtube } = content
+  const { path, slug, date, title, toc, youtube, coverImage } = content
 
   return (
     <SectionContainer>
@@ -28,24 +29,51 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
       <article className="glass glass-card overflow-hidden px-5 py-8 sm:px-8">
         <div>
           <header>
-            <div className="space-y-2 border-b border-white/40 pb-8 text-center dark:border-white/10">
-              <div>
-                <PageTitle>{title}</PageTitle>
+            {coverImage ? (
+              <div className="mb-8 overflow-hidden rounded-[1.25rem]">
+                <CoverWithTitle
+                  src={coverImage}
+                  title={title}
+                  variant="hero"
+                  titleAs="h1"
+                  priority
+                  className="aspect-[1200/630] w-full"
+                  sizes="(max-width: 1200px) 100vw, 960px"
+                />
+                <dl className="mt-4 text-center text-base leading-6 font-medium text-[var(--ink-soft)]">
+                  <div>
+                    <dt className="sr-only">Authors</dt>
+                    <dd className="inline">
+                      {authorDetails.map((author) => author.name).join(', ')}
+                    </dd>
+                    <dt className="sr-only">Published on</dt>
+                    <dd className="inline">
+                      <span aria-hidden="true"> · </span>
+                      <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
+                    </dd>
+                  </div>
+                </dl>
               </div>
-              <dl>
-                <div className="text-base leading-6 font-medium text-[var(--ink-soft)]">
-                  <dt className="sr-only">Authors</dt>
-                  <dd className="inline">
-                    {authorDetails.map((author) => author.name).join(', ')}
-                  </dd>
-                  <dt className="sr-only">Published on</dt>
-                  <dd className="inline">
-                    <span aria-hidden="true"> · </span>
-                    <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
-                  </dd>
+            ) : (
+              <div className="space-y-2 border-b border-white/40 pb-8 text-center dark:border-white/10">
+                <div>
+                  <PageTitle>{title}</PageTitle>
                 </div>
-              </dl>
-            </div>
+                <dl>
+                  <div className="text-base leading-6 font-medium text-[var(--ink-soft)]">
+                    <dt className="sr-only">Authors</dt>
+                    <dd className="inline">
+                      {authorDetails.map((author) => author.name).join(', ')}
+                    </dd>
+                    <dt className="sr-only">Published on</dt>
+                    <dd className="inline">
+                      <span aria-hidden="true"> · </span>
+                      <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            )}
           </header>
           <div className="grid-rows-[auto_1fr] divide-y divide-gray-200 pb-8 xl:divide-y-0 dark:divide-gray-700">
             <div className="divide-y divide-gray-200 xl:col-span-3 xl:row-span-2 xl:pb-0 dark:divide-gray-700">

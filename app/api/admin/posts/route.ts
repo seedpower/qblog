@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { after, NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { createPost, getAllPosts } from '@/lib/posts'
 import { ensurePostTranslation } from '@/lib/translate-post'
-import type { PostInput, PostListItem } from '@/lib/types'
+import type { PostInput } from '@/lib/types'
 
 function parsePostInput(body: Record<string, unknown>): PostInput {
   const tagsRaw = body.tags
@@ -77,19 +77,22 @@ export async function POST(request: NextRequest) {
     }
     const post = await createPost(input)
 
-    let translation: PostListItem | null = null
-    let translationError: string | undefined
-    try {
-      if (post._id) {
-        const result = await ensurePostTranslation(post._id)
-        translation = result?.translation || null
-      }
-    } catch (error) {
-      translationError = error instanceof Error ? error.message : 'Translation failed'
-      console.error('[translate]', translationError)
+    // Don't block Publish on OpenRouter — translate after the response is sent.
+    if (post._id) {
+      const postId = post._id
+      after(async () => {
+        try {
+          await ensurePostTranslation(postId)
+        } catch (error) {
+          console.error(
+            '[translate:background]',
+            error instanceof Error ? error.message : 'Translation failed'
+          )
+        }
+      })
     }
 
-    return NextResponse.json({ post, translation, translationError }, { status: 201 })
+    return NextResponse.json({ post, translating: Boolean(post._id) }, { status: 201 })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Create failed'
     return NextResponse.json({ error: message }, { status: 500 })

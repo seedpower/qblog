@@ -147,7 +147,7 @@ export async function uploadMediaObject(opts: {
   key: string
   body: Buffer
   contentType?: string
-  /** Mutable assets (e.g. regenerated cover.png) should use a short / no-cache policy. */
+  /** Mutable assets (e.g. regenerated cover.webp) should use a short / no-cache policy. */
   cacheControl?: string
 }) {
   const key = sanitizeObjectKey(opts.key)

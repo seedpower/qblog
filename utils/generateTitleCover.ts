@@ -1,61 +1,13 @@
-/** Client-side title → cover PNG (no AI). */
+/** Client-side cover background (no AI, no baked-in title — title overlays via DOM). */
 
-export type TitleCoverOptions = {
-  title: string
+export type CoverBackgroundOptions = {
   width?: number
   height?: number
+  /** WebP / JPEG quality 0–1. Default 0.78. */
+  quality?: number
 }
 
-function wrapLines(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-  maxLines: number
-): string[] {
-  const normalized = text.replace(/\s+/g, ' ').trim()
-  if (!normalized) return ['Untitled']
-
-  const chars = Array.from(normalized)
-  const lines: string[] = []
-  let current = ''
-
-  const push = (line: string) => {
-    const trimmed = line.trim()
-    if (trimmed) lines.push(trimmed)
-  }
-
-  for (let i = 0; i < chars.length; i++) {
-    const ch = chars[i]
-    const next = current + ch
-    if (ctx.measureText(next).width <= maxWidth) {
-      current = next
-      continue
-    }
-
-    // Prefer breaking at space when possible
-    if (/\s/.test(ch) && current) {
-      push(current)
-      current = ''
-      continue
-    }
-
-    if (current) push(current)
-    current = /\s/.test(ch) ? '' : ch
-
-    if (lines.length >= maxLines - 1) {
-      // Remaining text into last line with ellipsis if needed
-      let rest = current + chars.slice(i + 1).join('')
-      while (rest.length > 1 && ctx.measureText(`${rest}…`).width > maxWidth) {
-        rest = rest.slice(0, -1)
-      }
-      push(ctx.measureText(rest).width > maxWidth ? `${rest.slice(0, -1)}…` : `${rest}…`)
-      return lines.slice(0, maxLines)
-    }
-  }
-
-  if (current) push(current)
-  return lines.slice(0, maxLines)
-}
+export type CoverEncodeFormat = 'image/webp' | 'image/jpeg'
 
 function rand(min: number, max: number) {
   return min + Math.random() * (max - min)
@@ -138,7 +90,7 @@ function paintBackground(ctx: CanvasRenderingContext2D, width: number, height: n
     ctx.fill()
   }
 
-  // Glass panel
+  // Glass panel — empty stage for DOM title overlay later
   const padX = width * 0.07
   const padY = height * 0.14
   const panelW = width - padX * 2
@@ -168,8 +120,6 @@ function paintBackground(ctx: CanvasRenderingContext2D, width: number, height: n
   ctx.lineWidth = 1.5
   roundRect(ctx, padX, padY, panelW, panelH, radius)
   ctx.stroke()
-
-  return { padX, padY, panelW, panelH }
 }
 
 function roundRect(
@@ -190,10 +140,42 @@ function roundRect(
   ctx.closePath()
 }
 
-export async function generateTitleCoverBlob(options: TitleCoverOptions): Promise<Blob> {
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality?: number
+): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob((result) => resolve(result), type, quality)
+  })
+}
+
+function extensionForType(type: CoverEncodeFormat) {
+  return type === 'image/webp' ? 'webp' : 'jpg'
+}
+
+/** Generated cover filenames we overwrite / replace in the images field. */
+export const GENERATED_COVER_NAMES = new Set([
+  'cover.webp',
+  'cover.jpg',
+  'cover.jpeg',
+  'cover.png',
+])
+
+export function isGeneratedCoverName(name: string) {
+  return GENERATED_COVER_NAMES.has(name.trim().toLowerCase())
+}
+
+/**
+ * Encode as WebP (preferred) or JPEG — soft gradient covers compress well;
+ * PNG was ~0.5–1MB for 1200×630.
+ */
+export async function generateTitleCoverBlob(
+  options: CoverBackgroundOptions = {}
+): Promise<{ blob: Blob; type: CoverEncodeFormat; extension: string }> {
   const width = options.width ?? 1200
   const height = options.height ?? 630
-  const title = options.title.trim() || 'Untitled'
+  const quality = options.quality ?? 0.78
 
   const canvas = document.createElement('canvas')
   canvas.width = width
@@ -201,48 +183,35 @@ export async function generateTitleCoverBlob(options: TitleCoverOptions): Promis
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas is not available')
 
-  const { padX, padY, panelW, panelH } = paintBackground(ctx, width, height)
+  // JPEG/WebP need an opaque backdrop (no alpha).
+  paintBackground(ctx, width, height)
 
-  // Title
-  const titleSize = Math.round(height * 0.095)
-  const lineHeight = titleSize * 1.22
-  ctx.fillStyle = '#10151c'
-  ctx.font = `700 ${titleSize}px -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Noto Sans SC", "Segoe UI", sans-serif`
-  ctx.textAlign = 'left'
-  ctx.textBaseline = 'top'
-
-  const maxTextWidth = panelW * 0.84
-  const lines = wrapLines(ctx, title, maxTextWidth, 4)
-  const textBlockHeight = lines.length * lineHeight
-  let textY = padY + panelH * 0.22
-  const remaining = padY + panelH * 0.88 - textY
-  if (textBlockHeight < remaining) {
-    textY += (remaining - textBlockHeight) * 0.35
+  const tryEncode = async (type: CoverEncodeFormat) => {
+    const blob = await canvasToBlob(canvas, type, quality)
+    // Some browsers leave blob.type empty even when encoding succeeds.
+    if (!blob || blob.size < 100) return null
+    if (blob.type && blob.type !== type) return null
+    return blob
   }
 
-  ctx.shadowColor = 'rgba(18, 42, 84, 0.12)'
-  ctx.shadowBlur = 18
-  ctx.shadowOffsetY = 4
-  for (let i = 0; i < lines.length; i++) {
-    ctx.fillText(lines[i], padX + panelW * 0.08, textY + i * lineHeight)
+  const webp = await tryEncode('image/webp')
+  if (webp) {
+    return { blob: webp, type: 'image/webp', extension: extensionForType('image/webp') }
   }
-  ctx.shadowColor = 'transparent'
-  ctx.shadowBlur = 0
-  ctx.shadowOffsetY = 0
 
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((result) => {
-      if (result) resolve(result)
-      else reject(new Error('Failed to encode cover PNG'))
-    }, 'image/png')
-  })
-  return blob
+  const jpeg = await tryEncode('image/jpeg')
+  if (jpeg) {
+    return { blob: jpeg, type: 'image/jpeg', extension: extensionForType('image/jpeg') }
+  }
+
+  throw new Error('Failed to encode cover image')
 }
 
 export async function generateTitleCoverFile(
-  options: TitleCoverOptions,
-  filename = 'cover.png'
+  options: CoverBackgroundOptions = {},
+  filename?: string
 ): Promise<File> {
-  const blob = await generateTitleCoverBlob(options)
-  return new File([blob], filename, { type: 'image/png' })
+  const { blob, type, extension } = await generateTitleCoverBlob(options)
+  const name = filename || `cover.${extension}`
+  return new File([blob], name, { type })
 }

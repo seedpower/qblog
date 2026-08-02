@@ -77,7 +77,10 @@ async function docToDetail(
       datePublished: list.date,
       dateModified: list.lastmod || list.date,
       description: list.summary,
-      image: list.coverImage,
+      image: `${siteMetadata.siteUrl.replace(/\/$/, '')}/api/og/?${new URLSearchParams({
+        slug: list.slug,
+        locale: list.locale,
+      }).toString()}`,
       url: `${siteMetadata.siteUrl}/${list.path}`,
     },
   }

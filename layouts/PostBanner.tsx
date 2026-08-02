@@ -1,9 +1,8 @@
 import { ReactNode } from 'react'
-import Image from '@/components/Image'
 import Bleed from 'pliny/ui/Bleed'
 import Comments from '@/components/Comments'
+import CoverWithTitle from '@/components/CoverWithTitle'
 import Link from '@/components/Link'
-import PageTitle from '@/components/PageTitle'
 import SectionContainer from '@/components/SectionContainer'
 import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
@@ -26,16 +25,19 @@ export default function PostMinimal({ content, next, prev, children }: LayoutPro
       <ScrollTopAndComment />
       <article>
         <div>
-          <div className="space-y-1 pb-10 text-center dark:border-gray-700">
+          <div className="space-y-1 pb-10 dark:border-gray-700">
             <div className="w-full">
               <Bleed>
-                <div className="relative aspect-2/1 w-full">
-                  <Image src={coverImage} alt={title} fill className="object-cover" />
-                </div>
+                <CoverWithTitle
+                  src={coverImage}
+                  title={title}
+                  variant="hero"
+                  titleAs="h1"
+                  priority
+                  className="aspect-2/1 w-full rounded-[var(--radius-glass)]"
+                  sizes="100vw"
+                />
               </Bleed>
-            </div>
-            <div className="relative pt-10">
-              <PageTitle>{title}</PageTitle>
             </div>
           </div>
           {youtube && (

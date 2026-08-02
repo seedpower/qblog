@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import dynamic from 'next/dynamic'
 import { resolveBlogImageSrc } from '@/utils/resolveBlogImageSrc'
@@ -185,6 +185,7 @@ export default function AdminMarkdownEditor({
   title,
   locale = 'zh-CN',
   slug,
+  fillHeight = false,
   onFileUploaded,
   onMetaChange,
   onStatusChange,
@@ -195,6 +196,8 @@ export default function AdminMarkdownEditor({
   locale?: 'zh-CN' | 'en'
   /** Post slug used as R2 folder: blog/{slug}/ */
   slug?: string
+  /** Fill parent height instead of a viewport-based default */
+  fillHeight?: boolean
   /** Called after a successful upload (bare filename + kind) */
   onFileUploaded?: (filename: string, kind: 'image' | 'audio' | 'video' | 'other') => void
   onMetaChange?: (meta: string) => void
@@ -212,6 +215,7 @@ export default function AdminMarkdownEditor({
   const pointerDownRef = useRef(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const manageUploadRef = useRef<HTMLInputElement>(null)
+  const [editorHeight, setEditorHeight] = useState(fillHeight ? 480 : undefined)
   const caretRef = useRef<{ start: number; end: number } | null>(null)
 
   const [mounted, setMounted] = useState(false)
@@ -567,6 +571,24 @@ export default function AdminMarkdownEditor({
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useLayoutEffect(() => {
+    if (!fillHeight) return
+    const root = wrapRef.current
+    if (!root || typeof ResizeObserver === 'undefined') return
+
+    const sync = () => {
+      const mediaBar = root.querySelector('.admin-md-media-bar') as HTMLElement | null
+      const barH = mediaBar?.offsetHeight ?? 0
+      const next = Math.max(320, Math.floor(root.clientHeight - barH))
+      setEditorHeight((prev) => (prev === next ? prev : next))
+    }
+
+    const ro = new ResizeObserver(sync)
+    ro.observe(root)
+    sync()
+    return () => ro.disconnect()
+  }, [fillHeight])
 
   useEffect(() => {
     const root = wrapRef.current
@@ -980,7 +1002,7 @@ export default function AdminMarkdownEditor({
   return (
     <div
       ref={wrapRef}
-      className={`admin-md-compose${highlightRange ? ' admin-md-has-suggestion' : ''}`}
+      className={`admin-md-compose${highlightRange ? ' admin-md-has-suggestion' : ''}${fillHeight ? ' admin-md-compose-fill' : ''}`}
       data-color-mode="light"
     >
       <div className="admin-md-media-bar">
@@ -1028,7 +1050,7 @@ export default function AdminMarkdownEditor({
       <MDEditor
         value={value}
         onChange={handleChange}
-        height="calc(100vh - 8rem)"
+        height={fillHeight ? editorHeight ?? 480 : 'calc(100vh - 8rem)'}
         visibleDragbar={false}
         preview="live"
         previewOptions={previewOptions}

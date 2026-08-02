@@ -1,11 +1,12 @@
 'use client'
 
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { PostDetail } from '@/lib/types'
 import AdminMarkdownEditor from '@/components/admin/AdminMarkdownEditor'
-import { generateTitleCoverFile } from '@/utils/generateTitleCover'
+import CoverWithTitle from '@/components/CoverWithTitle'
+import { generateTitleCoverFile, isGeneratedCoverName } from '@/utils/generateTitleCover'
 import { resolveBlogImageSrc } from '@/utils/resolveBlogImageSrc'
 
 type FormState = {
@@ -66,7 +67,27 @@ export default function AdminPostEditor({
   })
   const [coverBusy, setCoverBusy] = useState(false)
   const [coverPreviewUrl, setCoverPreviewUrl] = useState('')
+  const [editorColumnHeight, setEditorColumnHeight] = useState<number | undefined>()
+  const asideRef = useRef<HTMLElement>(null)
   const isEdit = Boolean(postId)
+
+  useEffect(() => {
+    const aside = asideRef.current
+    if (!aside || typeof ResizeObserver === 'undefined') return
+
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const sync = () => {
+      setEditorColumnHeight(mq.matches ? aside.offsetHeight : undefined)
+    }
+    const ro = new ResizeObserver(sync)
+    ro.observe(aside)
+    mq.addEventListener('change', sync)
+    sync()
+    return () => {
+      ro.disconnect()
+      mq.removeEventListener('change', sync)
+    }
+  }, [])
 
   const titleHint = useMemo(() => {
     if (form.slug || !form.title) return ''
@@ -99,11 +120,6 @@ export default function AdminPostEditor({
   }
 
   async function generateCover() {
-    const title = form.title.trim()
-    if (!title) {
-      setError('Add a title before generating a cover')
-      return
-    }
     if (!uploadPrefix) {
       setError('Set a slug (or title) before generating a cover')
       return
@@ -112,20 +128,18 @@ export default function AdminPostEditor({
     setCoverBusy(true)
     setError('')
     try {
-      const file = await generateTitleCoverFile({ title }, 'cover.png')
+      const file = await generateTitleCoverFile({})
       const body = new FormData()
       body.append('file', file)
       body.append('prefix', uploadPrefix)
-      body.append('filename', 'cover.png')
+      body.append('filename', file.name)
 
       const res = await fetch('/api/admin/media/', { method: 'POST', body })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Cover upload failed')
 
       const preview =
-        typeof data.url === 'string' && data.url
-          ? data.url
-          : URL.createObjectURL(file)
+        typeof data.url === 'string' && data.url ? data.url : URL.createObjectURL(file)
       setCoverPreviewUrl((prev) => {
         if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev)
         return preview
@@ -136,10 +150,10 @@ export default function AdminPostEditor({
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean)
-          .filter((name) => name !== 'cover.png')
-        return { ...prev, images: ['cover.png', ...list].join(', ') }
+          .filter((name) => !isGeneratedCoverName(name))
+        return { ...prev, images: [file.name, ...list].join(', ') }
       })
-      setEditorStatus({ message: 'Cover uploaded (overwrote cover.png on R2)', kind: 'ok' })
+      setEditorStatus({ message: 'Cover background uploaded (title overlays via DOM)', kind: 'ok' })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Cover generation failed')
     } finally {
@@ -198,10 +212,6 @@ export default function AdminPostEditor({
         setError(data.error || 'Save failed')
         return
       }
-      if (data.translationError) {
-        setError(`Saved, but translation failed: ${data.translationError}`)
-        return
-      }
       router.replace('/admin')
       router.refresh()
     } catch {
@@ -227,7 +237,10 @@ export default function AdminPostEditor({
 
       <form onSubmit={onSubmit} className="space-y-3">
         <div className="grid gap-3 lg:grid-cols-[minmax(280px,22rem)_minmax(0,1fr)] lg:items-stretch lg:gap-4">
-          <aside className="glass space-y-4 rounded-[var(--radius-glass)] px-3 py-5 sm:px-4">
+          <aside
+            ref={asideRef}
+            className="glass space-y-4 rounded-[var(--radius-glass)] px-3 py-5 sm:px-4"
+          >
             <label className={labelClass}>
               Title
               <input
@@ -314,7 +327,7 @@ export default function AdminPostEditor({
                 <button
                   type="button"
                   onClick={() => void generateCover()}
-                  disabled={coverBusy || !form.title.trim()}
+                  disabled={coverBusy || !uploadPrefix}
                   className="glass glass-pill px-3 py-1 text-xs font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)] disabled:opacity-50"
                 >
                   {coverBusy ? 'Generating…' : 'Generate cover'}
@@ -324,17 +337,19 @@ export default function AdminPostEditor({
                 value={form.images}
                 onChange={(e) => update('images', e.target.value)}
                 className={fieldClass}
-                placeholder="cover.png, gallery-1.jpg"
+                placeholder="cover.webp, gallery-1.jpg"
               />
               <p className="mt-1 text-xs text-[var(--ink-soft)]">
-                First image is the cover. Generate cover draws the title onto a 1200×630 PNG (no AI).
+                First image is the cover. Generate cover creates a 1200×630 background only (no
+                title text — overlay via DOM for i18n).
               </p>
               {coverSrc ? (
-                // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-                <img
+                <CoverWithTitle
                   src={coverSrc}
-                  alt=""
-                  className="mt-2 aspect-[1200/630] w-full rounded-2xl border border-[var(--glass-stroke)] object-cover"
+                  title={form.title.trim() || 'Untitled'}
+                  variant="card"
+                  className="mt-2 aspect-[1200/630] w-full rounded-2xl border border-[var(--glass-stroke)]"
+                  sizes="(max-width: 768px) 100vw, 22rem"
                 />
               ) : null}
             </div>
@@ -349,13 +364,17 @@ export default function AdminPostEditor({
             </label>
           </aside>
 
-          <section className="glass min-w-0 rounded-[var(--radius-glass)] px-2 pt-4 pb-2 sm:px-3">
+          <section
+            className="glass flex min-h-[28rem] min-w-0 flex-col rounded-[var(--radius-glass)] px-2 pt-4 pb-2 sm:px-3 lg:min-h-0"
+            style={editorColumnHeight ? { height: editorColumnHeight } : undefined}
+          >
             <AdminMarkdownEditor
               value={form.body}
               onChange={(body) => update('body', body)}
               title={form.title}
               locale={form.locale}
               slug={form.slug || titleHint}
+              fillHeight
               onMetaChange={setEditorMeta}
               onStatusChange={setEditorStatus}
               onFileUploaded={(filename, kind) => {

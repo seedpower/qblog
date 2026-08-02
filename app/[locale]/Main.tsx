@@ -1,6 +1,6 @@
 'use client'
 
-import Image from '@/components/Image'
+import CoverWithTitle from '@/components/CoverWithTitle'
 import Link from '@/components/Link'
 import Tag from '@/components/Tag'
 import siteMetadata from '@/data/siteMetadata'
@@ -29,25 +29,15 @@ export default function Home({ posts }: { posts: PostListItem[] }) {
               <li key={slug}>
                 <article className="glass glass-card flex h-full flex-col overflow-hidden">
                   <Link href={`/blog/${slug}`} aria-label={tBlog('viewPost', { title })}>
-                    <div className="relative aspect-video w-full overflow-hidden">
-                      <Image
-                        src={coverImage}
-                        alt={title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      />
-                    </div>
+                    <CoverWithTitle
+                      src={coverImage}
+                      title={title}
+                      variant="card"
+                      className="aspect-video w-full"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
                   </Link>
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-4">
-                    <h2 className="line-clamp-2 text-base leading-snug font-semibold tracking-tight">
-                      <Link
-                        href={`/blog/${slug}`}
-                        className="hover:text-primary-600 dark:hover:text-primary-400 text-[var(--ink)] transition"
-                      >
-                        {title}
-                      </Link>
-                    </h2>
                     <p className="text-sm text-[var(--ink-soft)]">
                       <time dateTime={date}>{formatDate(date, locale)}</time>
                     </p>
@@ -78,7 +68,7 @@ export default function Home({ posts }: { posts: PostListItem[] }) {
         </div>
       )}
       {siteMetadata.newsletter?.provider && (
-        <div className="flex items-center justify-center pt-8">
+        <div className="flex items-center justify-center pt-4">
           <NewsletterForm />
         </div>
       )}

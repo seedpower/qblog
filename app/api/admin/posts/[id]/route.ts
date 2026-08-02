@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { after, NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { deletePostFamily, getPostById, updatePost } from '@/lib/posts'
 import { ensurePostTranslation } from '@/lib/translate-post'
-import type { PostInput, PostListItem } from '@/lib/types'
+import type { PostInput } from '@/lib/types'
 
 function parsePostInput(body: Record<string, unknown>): PostInput {
   const tagsRaw = body.tags
@@ -87,17 +87,18 @@ export async function PUT(request: NextRequest, context: Ctx) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
-    let translation: PostListItem | null = null
-    let translationError: string | undefined
-    try {
-      const result = await ensurePostTranslation(id)
-      translation = result?.translation || null
-    } catch (error) {
-      translationError = error instanceof Error ? error.message : 'Translation failed'
-      console.error('[translate]', translationError)
-    }
+    after(async () => {
+      try {
+        await ensurePostTranslation(id)
+      } catch (error) {
+        console.error(
+          '[translate:background]',
+          error instanceof Error ? error.message : 'Translation failed'
+        )
+      }
+    })
 
-    return NextResponse.json({ post, translation, translationError })
+    return NextResponse.json({ post, translating: true })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Update failed'
     return NextResponse.json({ error: message }, { status: 500 })

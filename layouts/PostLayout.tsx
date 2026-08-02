@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
 import Comments from '@/components/Comments'
+import CoverWithTitle from '@/components/CoverWithTitle'
 import Link from '@/components/Link'
 import PageTitle from '@/components/PageTitle'
 import SectionContainer from '@/components/SectionContainer'
@@ -29,7 +30,7 @@ interface LayoutProps {
 }
 
 export default function PostLayout({ content, authorDetails, next, prev, children }: LayoutProps) {
-  const { path, slug, date, title, tags, youtube } = content
+  const { path, slug, date, title, tags, youtube, coverImage } = content
   const basePath = path.split('/')[0]
 
   return (
@@ -38,7 +39,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
       <article>
         <div className="xl:divide-y xl:divide-gray-200 xl:dark:divide-gray-700">
           <header className="pt-6 xl:pb-6">
-            <div className="space-y-1 text-center">
+            <div className="space-y-4 text-center">
               <dl className="space-y-10">
                 <div>
                   <dt className="sr-only">Published on</dt>
@@ -49,9 +50,21 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                   </dd>
                 </div>
               </dl>
-              <div>
-                <PageTitle>{title}</PageTitle>
-              </div>
+              {coverImage ? (
+                <CoverWithTitle
+                  src={coverImage}
+                  title={title}
+                  variant="hero"
+                  titleAs="h1"
+                  priority
+                  className="aspect-[1200/630] w-full overflow-hidden rounded-[var(--radius-glass)]"
+                  sizes="(max-width: 1200px) 100vw, 1100px"
+                />
+              ) : (
+                <div>
+                  <PageTitle>{title}</PageTitle>
+                </div>
+              )}
             </div>
           </header>
           <div className="grid-rows-[auto_1fr] divide-y divide-gray-200 pb-8 xl:grid xl:grid-cols-4 xl:gap-x-6 xl:divide-y-0 dark:divide-gray-700">
