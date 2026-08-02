@@ -1,4 +1,4 @@
-import { MongoClient, Db, Collection } from 'mongodb'
+import { MongoClient, Db, Collection, type MongoClientOptions } from 'mongodb'
 import type { PostInput } from './types'
 
 export type PostDocument = PostInput & {
@@ -10,7 +10,20 @@ export type PostDocument = PostInput & {
 const uri = process.env.MONGODB_URI
 
 declare global {
+  // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined
+}
+
+const clientOptions: MongoClientOptions = {
+  // Railway private networking can flap briefly; prefer retry over hard fail.
+  maxPoolSize: 10,
+  minPoolSize: 0,
+  maxIdleTimeMS: 60_000,
+  serverSelectionTimeoutMS: 10_000,
+  connectTimeoutMS: 10_000,
+  socketTimeoutMS: 45_000,
+  retryWrites: true,
+  retryReads: true,
 }
 
 function getClientPromise(): Promise<MongoClient> {
@@ -18,16 +31,18 @@ function getClientPromise(): Promise<MongoClient> {
     throw new Error('Missing MONGODB_URI environment variable')
   }
 
-  if (process.env.NODE_ENV === 'development') {
-    if (!global._mongoClientPromise) {
-      const client = new MongoClient(uri)
-      global._mongoClientPromise = client.connect()
-    }
-    return global._mongoClientPromise
+  // Always cache on globalThis — production Next.js can evaluate this module
+  // more than once; creating a client per request exhausts Mongo and surfaces
+  // MongoNetworkError / SystemOverloadedError on Railway.
+  if (!global._mongoClientPromise) {
+    const client = new MongoClient(uri, clientOptions)
+    global._mongoClientPromise = client.connect().catch((error) => {
+      global._mongoClientPromise = undefined
+      throw error
+    })
   }
 
-  const client = new MongoClient(uri)
-  return client.connect()
+  return global._mongoClientPromise
 }
 
 export async function getDb(): Promise<Db> {
