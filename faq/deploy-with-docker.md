@@ -1,20 +1,18 @@
 # Deploy with Docker
 
-Follow the [official Next.js repo docker build example and instructions](https://github.com/vercel/next.js/tree/canary/examples/with-docker) to deploy with docker. Copy the [`Dockerfile`](https://github.com/vercel/next.js/blob/canary/examples/with-docker/Dockerfile) into the root of the project and modify the `next.config.js` file:
+This project ships a root `Dockerfile` that pins **Node 22** and builds Next.js in `standalone` mode so local and Railway run the same runtime.
 
-```js
-// next.config.js
-module.exports = {
-  // ... rest of the configuration.
-  output: 'standalone',
-}
-```
+## Railway
 
-You can now build the docker image and run it:
+`railway.toml` uses the Docker builder (`builder = "DOCKERFILE"`). Push and Railway will build the image; runtime env vars are injected by Railway (do not bake secrets into the image).
+
+## Local
 
 ```bash
-docker build -t nextjs-docker .
-docker run -p 3000:3000 nextjs-docker
+docker build -t seedpower-blog .
+docker run --rm -p 3000:3000 --env-file .env.local seedpower-blog
 ```
 
-Alternatively, to use docker compose, refer to the [docker compose repo](https://github.com/vercel/next.js/tree/canary/examples/with-docker-compose).
+## Static export
+
+If `EXPORT=1`, Next still uses `output: 'export'` instead of `standalone` (not used by this Dockerfile).

@@ -1,0 +1,34 @@
+# deps / build junk
+node_modules
+.next
+out
+coverage
+*.tsbuildinfo
+.turbo
+
+# local / secrets
+.env
+.env.*
+!.env.example
+
+# vcs / editor / agent
+.git
+.github
+.cursor
+.vscode
+.idea
+
+# yarn
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+.yarn/cache
+.yarn/install-state.gz
+
+# docs not needed at build
+README.md
+faq
+
+# OS
+.DS_Store
