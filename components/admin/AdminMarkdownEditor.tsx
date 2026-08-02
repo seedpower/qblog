@@ -1024,7 +1024,7 @@ export default function AdminMarkdownEditor({
       <MDEditor
         value={value}
         onChange={handleChange}
-        height="calc(100vh - 11rem)"
+        height="calc(100vh - 8rem)"
         visibleDragbar={false}
         preview="live"
         previewOptions={previewOptions}

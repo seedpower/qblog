@@ -156,9 +156,9 @@ export default function AdminPostEditor({
         </Link>
       </div>
 
-      <form onSubmit={onSubmit} className="glass glass-card overflow-hidden">
-        <div className="grid lg:grid-cols-[minmax(280px,22rem)_minmax(0,1fr)]">
-          <aside className="space-y-4 border-[var(--glass-stroke)] px-3 py-5 sm:px-4 lg:border-r lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
+      <form onSubmit={onSubmit} className="space-y-3">
+        <div className="grid gap-3 lg:grid-cols-[minmax(280px,22rem)_minmax(0,1fr)] lg:items-stretch lg:gap-4">
+          <aside className="glass space-y-4 rounded-[var(--radius-glass)] px-3 py-5 sm:px-4">
             <label className={labelClass}>
               Title
               <input
@@ -259,7 +259,7 @@ export default function AdminPostEditor({
             </label>
           </aside>
 
-          <section className="min-w-0 border-t border-[var(--glass-stroke)] px-2 pt-4 pb-2 sm:px-3 lg:border-t-0">
+          <section className="glass min-w-0 rounded-[var(--radius-glass)] px-2 pt-4 pb-2 sm:px-3">
             <AdminMarkdownEditor
               value={form.body}
               onChange={(body) => update('body', body)}
@@ -283,7 +283,7 @@ export default function AdminPostEditor({
           </section>
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[var(--glass-stroke)] px-3 py-3 sm:px-4">
+        <div className="glass flex flex-wrap items-center justify-end gap-3 rounded-[var(--radius-glass)] px-3 py-3 sm:px-4">
           <div className="mr-auto flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
             {error && <p className="w-full text-sm text-red-600 sm:w-auto">{error}</p>}
             <span className="text-xs font-medium text-[var(--ink-soft)]">

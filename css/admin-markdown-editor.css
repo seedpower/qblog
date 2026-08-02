@@ -29,7 +29,7 @@
   -webkit-backdrop-filter: var(--glass-blur);
   box-shadow: var(--shadow-soft), var(--glass-sheen);
   color: var(--ink);
-  min-height: min(78vh, 52rem);
+  min-height: min(86vh, 58rem);
 }
 
 .admin-md-compose .w-md-editor-toolbar {
@@ -135,7 +135,7 @@ html.admin-md-fs .admin-md-compose {
   letter-spacing: normal !important;
   font-variant-ligatures: none !important;
   color: var(--ink) !important;
-  min-height: min(70vh, 44rem);
+  min-height: min(80vh, 52rem);
 }
 
 .admin-md-compose .w-md-editor-text-pre,
@@ -190,7 +190,7 @@ html.admin-md-fs .admin-md-compose {
 }
 
 .admin-md-loading {
-  min-height: min(78vh, 52rem);
+  min-height: min(86vh, 58rem);
   display: grid;
   place-items: center;
   border: 1px solid var(--glass-stroke);
