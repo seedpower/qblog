@@ -13,6 +13,7 @@ import { setRequestLocale } from 'next-intl/server'
 import { getAllPosts, getPostBySlug } from '@/lib/posts'
 import { getAuthorBySlug } from '@/lib/authors'
 import { defaultLocale, isAppLocale } from '@/i18n/routing'
+import AdminEditPostLink from '@/components/AdminEditPostLink'
 
 const defaultLayout = 'PostSimple'
 const layouts = {
@@ -104,6 +105,7 @@ export default async function Page(props: { params: Promise<{ locale: string; sl
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <AdminEditPostLink postId={post._id} />
       <Layout content={post} authorDetails={authorDetails} next={next} prev={prev}>
         <MDXContent source={post.body} blogPath={post.path} />
       </Layout>
