@@ -50,9 +50,9 @@ export default [
     rules: {
       // Don't fail `next build` on formatting / portal mouse handlers.
       'prettier/prettier': 'off',
-      'jsx-a11y/no-static-element-interactions': 'off',
-      'jsx-a11y/click-events-have-key-events': 'off',
-      '@next/next/no-img-element': 'off',
+      'jsx-a11y/no-static-element-interactions': 'warn',
+      'jsx-a11y/click-events-have-key-events': 'warn',
+      '@next/next/no-img-element': 'warn',
       'jsx-a11y/alt-text': 'warn',
       'react/react-in-jsx-scope': 'off',
 
