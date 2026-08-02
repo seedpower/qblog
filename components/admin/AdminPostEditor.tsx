@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { PostDetail } from '@/lib/types'
 import AdminMarkdownEditor from '@/components/admin/AdminMarkdownEditor'
+import { generateTitleCoverFile } from '@/utils/generateTitleCover'
+import { resolveBlogImageSrc } from '@/utils/resolveBlogImageSrc'
 
 type FormState = {
   title: string
@@ -62,6 +64,8 @@ export default function AdminPostEditor({
     message: '',
     kind: '',
   })
+  const [coverBusy, setCoverBusy] = useState(false)
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState('')
   const isEdit = Boolean(postId)
 
   const titleHint = useMemo(() => {
@@ -74,8 +78,73 @@ export default function AdminPostEditor({
       .replace(/^-|-$/g, '')
   }, [form.slug, form.title])
 
+  const uploadPrefix = useMemo(() => {
+    const clean = (form.slug || titleHint || '').replace(/^\/+|\/+$/g, '').replace(/\\/g, '/')
+    return clean ? `blog/${clean}/` : ''
+  }, [form.slug, titleHint])
+
+  const coverSrc = useMemo(() => {
+    if (coverPreviewUrl) return coverPreviewUrl
+    const first = form.images
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)[0]
+    if (!first) return ''
+    const blogPath = uploadPrefix.replace(/\/$/, '')
+    return resolveBlogImageSrc(first, blogPath) || first
+  }, [coverPreviewUrl, form.images, uploadPrefix])
+
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  async function generateCover() {
+    const title = form.title.trim()
+    if (!title) {
+      setError('Add a title before generating a cover')
+      return
+    }
+    if (!uploadPrefix) {
+      setError('Set a slug (or title) before generating a cover')
+      return
+    }
+
+    setCoverBusy(true)
+    setError('')
+    try {
+      const file = await generateTitleCoverFile({ title }, 'cover.png')
+      const body = new FormData()
+      body.append('file', file)
+      body.append('prefix', uploadPrefix)
+      body.append('filename', 'cover.png')
+
+      const res = await fetch('/api/admin/media/', { method: 'POST', body })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Cover upload failed')
+
+      const preview =
+        typeof data.url === 'string' && data.url
+          ? data.url
+          : URL.createObjectURL(file)
+      setCoverPreviewUrl((prev) => {
+        if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev)
+        return preview
+      })
+
+      setForm((prev) => {
+        const list = prev.images
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .filter((name) => name !== 'cover.png')
+        return { ...prev, images: ['cover.png', ...list].join(', ') }
+      })
+      setEditorStatus({ message: 'Cover uploaded (overwrote cover.png on R2)', kind: 'ok' })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Cover generation failed')
+    } finally {
+      setCoverBusy(false)
+    }
   }
 
   async function copyBody() {
@@ -239,15 +308,36 @@ export default function AdminPostEditor({
               />
             </label>
 
-            <label className={labelClass}>
-              Images (comma separated)
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <span className={labelClass}>Images (comma separated)</span>
+                <button
+                  type="button"
+                  onClick={() => void generateCover()}
+                  disabled={coverBusy || !form.title.trim()}
+                  className="glass glass-pill px-3 py-1 text-xs font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)] disabled:opacity-50"
+                >
+                  {coverBusy ? 'Generating…' : 'Generate cover'}
+                </button>
+              </div>
               <input
                 value={form.images}
                 onChange={(e) => update('images', e.target.value)}
                 className={fieldClass}
                 placeholder="cover.png, gallery-1.jpg"
               />
-            </label>
+              <p className="mt-1 text-xs text-[var(--ink-soft)]">
+                First image is the cover. Generate cover draws the title onto a 1200×630 PNG (no AI).
+              </p>
+              {coverSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
+                <img
+                  src={coverSrc}
+                  alt=""
+                  className="mt-2 aspect-[1200/630] w-full rounded-2xl border border-[var(--glass-stroke)] object-cover"
+                />
+              ) : null}
+            </div>
 
             <label className={labelClass}>
               YouTube URL

@@ -91,13 +91,23 @@ export async function POST(request: NextRequest) {
 
     const key = sanitizeObjectKey(`${prefix}${safeName}`)
     const buffer = Buffer.from(await file.arrayBuffer())
+    // cover.png is intentionally overwritten on regenerate — avoid long CDN TTL
+    const isMutableCover = safeName.toLowerCase() === 'cover.png'
     const uploaded = await uploadMediaObject({
       key,
       body: buffer,
       contentType: file.type || undefined,
+      cacheControl: isMutableCover
+        ? 'public, max-age=0, must-revalidate'
+        : 'public, max-age=31536000, immutable',
     })
 
-    return NextResponse.json({ ok: true, ...uploaded })
+    return NextResponse.json({
+      ok: true,
+      ...uploaded,
+      // Help clients bust edge/browser caches after overwrite
+      url: isMutableCover ? `${uploaded.url}?v=${Date.now()}` : uploaded.url,
+    })
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Upload failed' },

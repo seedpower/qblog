@@ -147,6 +147,8 @@ export async function uploadMediaObject(opts: {
   key: string
   body: Buffer
   contentType?: string
+  /** Mutable assets (e.g. regenerated cover.png) should use a short / no-cache policy. */
+  cacheControl?: string
 }) {
   const key = sanitizeObjectKey(opts.key)
   if (!key) throw new Error('Object key is required')
@@ -158,6 +160,7 @@ export async function uploadMediaObject(opts: {
       Key: key,
       Body: opts.body,
       ContentType: opts.contentType || 'application/octet-stream',
+      CacheControl: opts.cacheControl || 'public, max-age=31536000, immutable',
     })
   )
 
