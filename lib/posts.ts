@@ -225,6 +225,20 @@ export async function deletePost(id: string): Promise<boolean> {
   return result.deletedCount === 1
 }
 
+/** Delete a post and all locale siblings that share its translationKey/slug. */
+export async function deletePostFamily(id: string): Promise<number> {
+  if (!ObjectId.isValid(id)) return 0
+  const collection = await getPostsCollection()
+  const post = await collection.findOne({ _id: new ObjectId(id) })
+  if (!post) return 0
+
+  const translationKey = post.translationKey || post.slug
+  const result = await collection.deleteMany({
+    $or: [{ translationKey }, { slug: post.slug }],
+  })
+  return result.deletedCount
+}
+
 export async function upsertLocaleSibling(
   source: PostDetail,
   translated: {

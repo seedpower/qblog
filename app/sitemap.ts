@@ -13,7 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const prefix = locale === defaultLocale ? '' : `/${locale}`
     const posts = await getAllPosts({ locale })
 
-    for (const route of ['', 'blog', 'projects', 'tags', 'about']) {
+    for (const route of ['', 'blog', 'tags', 'about']) {
       routes.push({
         url: `${siteUrl}${prefix}/${route}`.replace(/\/$/, '') || siteUrl,
         lastModified: new Date().toISOString().split('T')[0],

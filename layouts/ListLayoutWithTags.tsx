@@ -88,14 +88,16 @@ export default function ListLayoutWithTags({
           </h1>
         </div>
         <div className="flex sm:space-x-24">
-          <div className="hidden h-full max-h-screen max-w-[280px] min-w-[280px] flex-wrap overflow-auto rounded-sm bg-gray-50 pt-5 shadow-md sm:flex dark:bg-gray-900/70 dark:shadow-gray-800/40">
+          <div className="glass glass-card hidden h-full max-h-screen max-w-[280px] min-w-[280px] flex-wrap overflow-auto pt-5 sm:flex">
             <div className="px-6 py-4">
               {pathname.startsWith('/blog') ? (
-                <h3 className="text-primary-500 font-bold uppercase">{t('allPosts')}</h3>
+                <h3 className="text-primary-600 dark:text-primary-400 font-bold uppercase">
+                  {t('allPosts')}
+                </h3>
               ) : (
                 <Link
                   href={`/blog`}
-                  className="hover:text-primary-500 dark:hover:text-primary-500 font-bold text-gray-700 uppercase dark:text-gray-300"
+                  className="hover:text-primary-600 dark:hover:text-primary-400 font-bold text-[var(--ink-soft)] uppercase transition"
                 >
                   {t('allPosts')}
                 </Link>
@@ -105,13 +107,13 @@ export default function ListLayoutWithTags({
                   return (
                     <li key={tag} className="my-3">
                       {decodeURI(pathname.split('/tags/')[1]?.split('/')[0] ?? '') === slug(tag) ? (
-                        <h3 className="text-primary-500 inline px-3 py-2 text-sm font-bold uppercase">
+                        <h3 className="text-primary-600 dark:text-primary-400 inline px-3 py-2 text-sm font-bold uppercase">
                           {`${tag} (${tagCounts[tag]})`}
                         </h3>
                       ) : (
                         <Link
                           href={`/tags/${slug(tag)}`}
-                          className="hover:text-primary-500 dark:hover:text-primary-500 px-3 py-2 text-sm font-medium text-gray-500 uppercase dark:text-gray-300"
+                          className="hover:text-primary-600 dark:hover:text-primary-400 px-3 py-2 text-sm font-medium text-[var(--ink-soft)] uppercase transition"
                           aria-label={tTags('viewTagged', { tag })}
                         >
                           {`${tag} (${tagCounts[tag]})`}
@@ -123,19 +125,19 @@ export default function ListLayoutWithTags({
               </ul>
             </div>
           </div>
-          <div>
-            <ul>
+          <div className="min-w-0 flex-1">
+            <ul className="space-y-4">
               {displayPosts.map((post) => {
                 const { path, date, title: postTitle, summary, tags, coverImage } = post
                 return (
-                  <li key={path} className="py-5">
-                    <article className="flex gap-4 sm:gap-6">
+                  <li key={path}>
+                    <article className="glass glass-card flex gap-4 p-4 sm:gap-6">
                       <Link
                         href={`/${path}`}
                         className="shrink-0"
                         aria-label={t('viewPost', { title: postTitle })}
                       >
-                        <div className="relative aspect-video w-32 overflow-hidden rounded-lg sm:w-40">
+                        <div className="relative aspect-video w-32 overflow-hidden rounded-xl sm:w-40">
                           <Image
                             src={coverImage}
                             alt={postTitle}
@@ -148,28 +150,29 @@ export default function ListLayoutWithTags({
                       <div className="min-w-0 flex-1 space-y-2">
                         <dl>
                           <dt className="sr-only">{t('publishedOn')}</dt>
-                          <dd className="text-base leading-6 font-medium text-gray-500 dark:text-gray-400">
+                          <dd className="text-sm font-medium text-[var(--ink-soft)]">
                             <time dateTime={date} suppressHydrationWarning>
                               {formatDate(date, locale)}
                             </time>
                           </dd>
                         </dl>
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           <div>
-                            <h2 className="text-2xl leading-8 font-bold tracking-tight">
-                              <Link href={`/${path}`} className="text-gray-900 dark:text-gray-100">
+                            <h2 className="text-xl leading-7 font-bold tracking-tight sm:text-2xl">
+                              <Link
+                                href={`/${path}`}
+                                className="hover:text-primary-600 dark:hover:text-primary-400 text-[var(--ink)] transition"
+                              >
                                 {postTitle}
                               </Link>
                             </h2>
-                            <div className="flex flex-wrap">
+                            <div className="mt-2 flex flex-wrap gap-1.5">
                               {tags?.map((tag) => (
                                 <Tag key={tag} text={tag} />
                               ))}
                             </div>
                           </div>
-                          <div className="prose max-w-none text-gray-500 dark:text-gray-400">
-                            {summary}
-                          </div>
+                          <div className="text-[var(--ink-soft)]">{summary}</div>
                         </div>
                       </div>
                     </article>

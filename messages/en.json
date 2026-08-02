@@ -2,7 +2,7 @@
   "nav": {
     "home": "Home",
     "blog": "Blog",
-    "projects": "Projects",
+    "apps": "Apps",
     "about": "About"
   },
   "home": {
@@ -23,7 +23,8 @@
     "authors": "Authors",
     "publishedOn": "Published on",
     "discussOnX": "Discuss on X",
-    "viewPost": "View post: {title}"
+    "viewPost": "View post: {title}",
+    "toc": "TOC"
   },
   "tags": {
     "title": "Tags",

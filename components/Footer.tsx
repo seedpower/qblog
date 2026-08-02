@@ -3,18 +3,24 @@ import siteMetadata from '@/data/siteMetadata'
 import SocialIcon from '@/components/social-icons'
 
 export default function Footer() {
+  const basePath = process.env.BASE_PATH || ''
+
   return (
-    <footer>
-      <div className="mt-16 flex flex-col items-center">
-        <div className="mb-3 flex space-x-4">
+    <footer className="mt-16 mb-8">
+      <div className="glass glass-card flex flex-col items-center gap-3 px-5 py-6">
+        <div className="flex space-x-4">
           <SocialIcon kind="x" href={siteMetadata.x || siteMetadata.twitter} size={6} />
+          <SocialIcon kind="rss" href={`${basePath}/api/feed`} size={6} />
+          <SocialIcon kind="sitemap" href={`${basePath}/sitemap.xml`} size={6} />
         </div>
-        <div className="mb-2 flex space-x-2 text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex flex-wrap items-center justify-center gap-x-2 text-sm text-[var(--ink-soft)]">
           <div>{siteMetadata.author}</div>
-          <div>{` • `}</div>
+          <div aria-hidden>•</div>
           <div>{`© ${new Date().getFullYear()}`}</div>
-          <div>{` • `}</div>
-          <Link href="/">{siteMetadata.title}</Link>
+          <div aria-hidden>•</div>
+          <Link href="/" className="hover:text-[var(--ink)]">
+            {siteMetadata.title}
+          </Link>
         </div>
       </div>
     </footer>

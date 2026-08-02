@@ -11,42 +11,49 @@ import { useTranslations } from 'next-intl'
 
 const Header = () => {
   const t = useTranslations('nav')
-  let headerClass = 'flex items-center w-full bg-white dark:bg-gray-950 justify-between py-10'
-  if (siteMetadata.stickyNav) {
-    headerClass += ' sticky top-0 z-50'
-  }
 
   return (
-    <header className={headerClass}>
-      <Link href="/" aria-label={siteMetadata.headerTitle}>
-        <div className="flex items-center justify-between">
-          {typeof siteMetadata.headerTitle === 'string' ? (
-            <div className="hidden h-6 text-2xl font-semibold sm:block">
-              {siteMetadata.headerTitle}
-            </div>
-          ) : (
-            siteMetadata.headerTitle
-          )}
+    <header className="sticky top-0 z-50 py-3">
+      <div className="glass glass-pill flex items-center justify-between gap-3 px-3 py-2 sm:px-4 sm:py-2.5">
+        <Link href="/" aria-label={siteMetadata.headerTitle} className="min-w-0 shrink-0">
+          <div className="flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/static/favicons/favicon.svg"
+              alt=""
+              width={28}
+              height={28}
+              className="h-7 w-7"
+            />
+            {typeof siteMetadata.headerTitle === 'string' ? (
+              <span className="hidden truncate text-lg font-bold tracking-tight text-[var(--ink)] sm:inline">
+                {siteMetadata.headerTitle}
+              </span>
+            ) : (
+              siteMetadata.headerTitle
+            )}
+          </div>
+        </Link>
+
+        <div className="flex items-center gap-1 sm:gap-2">
+          <nav className="no-scrollbar hidden items-center gap-0.5 overflow-x-auto sm:flex">
+            {headerNavLinks
+              .filter((link) => link.href !== '/')
+              .map((link) => (
+                <Link
+                  key={link.titleKey}
+                  href={link.href}
+                  className="rounded-full px-3 py-1.5 text-sm font-medium text-[var(--ink-soft)] transition hover:bg-white/55 hover:text-[var(--ink)] dark:hover:bg-white/12"
+                >
+                  {t(link.titleKey)}
+                </Link>
+              ))}
+          </nav>
+          <LanguageSwitcher />
+          <SearchButton />
+          <ThemeSwitch />
+          <MobileNav />
         </div>
-      </Link>
-      <div className="flex items-center space-x-4 leading-5 sm:-mr-6 sm:space-x-6">
-        <div className="no-scrollbar hidden max-w-40 items-center gap-x-4 overflow-x-auto sm:flex md:max-w-72 lg:max-w-96">
-          {headerNavLinks
-            .filter((link) => link.href !== '/')
-            .map((link) => (
-              <Link
-                key={link.titleKey}
-                href={link.href}
-                className="hover:text-primary-500 dark:hover:text-primary-400 m-1 font-medium text-gray-900 dark:text-gray-100"
-              >
-                {t(link.titleKey)}
-              </Link>
-            ))}
-        </div>
-        <LanguageSwitcher />
-        <SearchButton />
-        <ThemeSwitch />
-        <MobileNav />
       </div>
     </header>
   )

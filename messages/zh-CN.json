@@ -2,7 +2,7 @@
   "nav": {
     "home": "主页",
     "blog": "文章",
-    "projects": "项目",
+    "apps": "Apps",
     "about": "关于"
   },
   "home": {
@@ -23,7 +23,8 @@
     "authors": "作者",
     "publishedOn": "发布于",
     "discussOnX": "在 X 上讨论",
-    "viewPost": "查看文章：{title}"
+    "viewPost": "查看文章：{title}",
+    "toc": "目录"
   },
   "tags": {
     "title": "标签",

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
-import { deletePost, getPostById, updatePost } from '@/lib/posts'
+import { deletePostFamily, getPostById, updatePost } from '@/lib/posts'
 import { ensurePostTranslation } from '@/lib/translate-post'
 import type { PostInput, PostListItem } from '@/lib/types'
 
@@ -109,9 +109,9 @@ export async function DELETE(_request: NextRequest, context: Ctx) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const { id } = await context.params
-  const ok = await deletePost(id)
-  if (!ok) {
+  const deleted = await deletePostFamily(id)
+  if (!deleted) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, deleted })
 }

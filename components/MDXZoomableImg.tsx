@@ -1,5 +1,6 @@
 'use client'
 
+import 'medium-zoom/dist/style.css'
 import { useMediumZoom } from './useMediumZoom'
 import { resolveBlogImageSrc } from '../utils/resolveBlogImageSrc'
 

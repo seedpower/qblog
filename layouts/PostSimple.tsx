@@ -25,15 +25,15 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
     <SectionContainer>
       <ScrollTopAndComment />
       {toc && toc.length > 0 && <ArticleTOC toc={toc} />}
-      <article>
+      <article className="glass glass-card overflow-hidden px-5 py-8 sm:px-8">
         <div>
           <header>
-            <div className="space-y-1 border-b border-gray-200 pb-10 text-center dark:border-gray-700">
+            <div className="space-y-2 border-b border-white/40 pb-8 text-center dark:border-white/10">
               <div>
                 <PageTitle>{title}</PageTitle>
               </div>
               <dl>
-                <div className="text-base leading-6 font-medium text-gray-500 dark:text-gray-400">
+                <div className="text-base leading-6 font-medium text-[var(--ink-soft)]">
                   <dt className="sr-only">Authors</dt>
                   <dd className="inline">
                     {authorDetails.map((author) => author.name).join(', ')}

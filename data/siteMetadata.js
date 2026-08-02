@@ -1,7 +1,7 @@
 /** @type {import("pliny/config").PlinyConfig } */
 const siteMetadata = {
   title: 'Seedpower Blog',
-  author: 'Chaowei',
+  author: 'Seedpower',
   headerTitle: 'Seedpower Blog',
   description: 'Tech notes, product tutorials, and life shares from Seedpower.',
   language: 'en',

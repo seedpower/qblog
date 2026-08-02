@@ -15,8 +15,11 @@ export function useMediumZoom<T extends HTMLElement>() {
     if (!element) return
 
     zoomRef.current = mediumZoom(element, {
-      margin: 24,
-      background: resolvedTheme === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+      margin: 28,
+      background:
+        resolvedTheme === 'dark'
+          ? 'linear-gradient(155deg, rgba(24, 28, 38, 0.72), rgba(10, 13, 19, 0.55))'
+          : 'linear-gradient(155deg, rgba(255, 255, 255, 0.62), rgba(238, 242, 248, 0.48))',
     })
 
     return () => {

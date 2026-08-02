@@ -3,17 +3,12 @@ import type { Author } from '@/lib/types'
 export const authors: Author[] = [
   {
     slug: 'default',
-    name: 'Chaowei 超维',
-    avatar: '/static/images/avatar.png',
-    occupation: '内容创作者',
-    twitter: 'https://x.com/chaowei2048',
-    body: `- 2023 - 2024
-> 软件工程师，从事后端开发与云原生运维。
+    name: 'Seedpower',
+    avatar: '/static/favicons/android-chrome-192x192.png',
+    body: `Seedpower builds products that help creators and teams grow faster.
 
-- 2024 - 2025
-> 大学教师，从事计算机专业课教学。
+We write about AI tools, product workflows, and practical lessons from shipping software.
 
-- 2025 - 2026
-> 自由职业，从事证券交易与投研工具开发。`,
+Seedpower 专注于帮助创作者与团队更高效地成长。我们分享 AI 工具、产品工作流，以及把产品做出来的实践经验。`,
   },
 ]
