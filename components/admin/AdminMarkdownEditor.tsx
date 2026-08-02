@@ -571,8 +571,9 @@ export default function AdminMarkdownEditor({
           ref={bubbleRef}
           role="toolbar"
           aria-label="AI edit actions"
+          aria-hidden={!bubbleVisible}
           tabIndex={-1}
-          className={`admin-md-bubble${bubbleVisible ? '' : 'hidden'}`}
+          className={bubbleVisible ? 'admin-md-bubble' : 'admin-md-bubble hidden'}
           style={{ left: bubbleStyle.left, top: bubbleStyle.top }}
           onMouseDown={(e) => e.preventDefault()}
           onKeyDown={(e) => {
@@ -641,8 +642,9 @@ export default function AdminMarkdownEditor({
           role="toolbar"
           aria-label="AI edit review"
           tabIndex={-1}
-          className={`admin-md-review${reviewVisible ? '' : 'hidden'}`}
+          className={reviewVisible ? 'admin-md-review' : 'admin-md-review hidden'}
           style={{ left: reviewStyle.left, top: reviewStyle.top }}
+          aria-hidden={!reviewVisible}
           onMouseDown={(e) => e.preventDefault()}
           onKeyDown={(e) => {
             if (e.key === 'Escape') dismissPending(false)
@@ -677,7 +679,9 @@ export default function AdminMarkdownEditor({
   return (
     <div
       ref={wrapRef}
-      className={`admin-md-compose${highlightRange ? 'admin-md-has-suggestion' : ''}`}
+      className={
+        highlightRange ? 'admin-md-compose admin-md-has-suggestion' : 'admin-md-compose'
+      }
       data-color-mode="light"
     >
       <MDEditor

@@ -231,8 +231,11 @@ html.admin-md-fs .admin-md-compose {
   pointer-events: auto;
 }
 
-.admin-md-bubble.hidden {
-  display: none;
+.admin-md-bubble.hidden,
+.admin-md-review.hidden {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 .admin-md-bubble-actions {
@@ -318,10 +321,6 @@ html.admin-md-fs .admin-md-compose {
   box-shadow: 0 12px 36px rgba(18, 32, 28, 0.12);
   backdrop-filter: blur(10px);
   max-width: calc(100vw - 16px);
-}
-
-.admin-md-review.hidden {
-  display: none;
 }
 
 .admin-md-review-label {
