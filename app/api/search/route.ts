@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   const localeParam = request.nextUrl.searchParams.get('locale')
-  const locale = localeParam === 'en' ? 'en' : 'zh-CN'
+  const locale = localeParam === 'zh-CN' ? 'zh-CN' : 'en'
   const posts = await getAllPosts({ locale })
   const documents = posts.map((post) => ({
     title: post.title,

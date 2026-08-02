@@ -165,7 +165,8 @@ export default function AdminPostEditor({
               <option value="en">English (en)</option>
             </select>
             <span className="mt-1 block text-xs text-gray-500">
-              Saving auto-translates to the other language via OpenRouter.
+              Authors usually write in Chinese. Saving auto-translates to English (and vice versa)
+              via OpenRouter. The public site defaults to English.
             </span>
           </label>
         </div>

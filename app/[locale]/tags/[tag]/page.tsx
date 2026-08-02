@@ -4,7 +4,7 @@ import { genPageMetadata } from 'app/seo'
 import { Metadata } from 'next'
 import { getPostsByTag, getTagCounts } from '@/lib/posts'
 import { setRequestLocale, getTranslations } from 'next-intl/server'
-import { isAppLocale } from '@/i18n/routing'
+import { defaultLocale, isAppLocale } from '@/i18n/routing'
 
 const POSTS_PER_PAGE = 5
 
@@ -29,7 +29,7 @@ export async function generateMetadata(props: {
 
 export default async function TagPage(props: { params: Promise<{ locale: string; tag: string }> }) {
   const params = await props.params
-  const locale = isAppLocale(params.locale) ? params.locale : 'zh-CN'
+  const locale = isAppLocale(params.locale) ? params.locale : defaultLocale
   setRequestLocale(locale)
   const t = await getTranslations('blog')
   const tag = decodeURI(params.tag)

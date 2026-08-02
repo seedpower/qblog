@@ -1,7 +1,7 @@
 import { setRequestLocale, getTranslations } from 'next-intl/server'
 import ListLayout from '@/layouts/ListLayoutWithTags'
 import { getAllPosts, getTagCounts } from '@/lib/posts'
-import { isAppLocale } from '@/i18n/routing'
+import { defaultLocale, isAppLocale } from '@/i18n/routing'
 import { genPageMetadata } from 'app/seo'
 
 const POSTS_PER_PAGE = 5
@@ -16,7 +16,7 @@ export async function generateMetadata(props: { params: Promise<{ locale: string
 
 export default async function BlogPage(props: { params: Promise<{ locale: string }> }) {
   const { locale } = await props.params
-  const appLocale = isAppLocale(locale) ? locale : 'zh-CN'
+  const appLocale = isAppLocale(locale) ? locale : defaultLocale
   setRequestLocale(appLocale)
   const t = await getTranslations('blog')
 

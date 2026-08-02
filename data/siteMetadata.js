@@ -3,8 +3,8 @@ const siteMetadata = {
   title: 'Seedpower Blog',
   author: 'Chaowei',
   headerTitle: 'Seedpower Blog',
-  description: '最新技术资讯，产品使用教程，生活分享',
-  language: 'zh-CN',
+  description: 'Tech notes, product tutorials, and life shares from Seedpower.',
+  language: 'en',
   theme: 'system', // system, dark or light
   siteUrl: 'https://blog.seedpower.app',
   staticCdn: 'https://static.chaowei2048.com',
@@ -25,8 +25,8 @@ const siteMetadata = {
   // medium: 'https://medium.com',
   // bluesky: 'https://bsky.app/',
   // buymeacoffee: 'https://buymeacoffee.com',
-  locale: 'zh-CN',
-  locales: ['zh-CN', 'en'],
+  locale: 'en',
+  locales: ['en', 'zh-CN'],
   // set to true if you want a navbar fixed to the top
   stickyNav: false,
   analytics: {

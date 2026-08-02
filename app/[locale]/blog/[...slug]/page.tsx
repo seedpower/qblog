@@ -12,7 +12,7 @@ import { notFound } from 'next/navigation'
 import { setRequestLocale } from 'next-intl/server'
 import { getAllPosts, getPostBySlug } from '@/lib/posts'
 import { getAuthorBySlug } from '@/lib/authors'
-import { isAppLocale } from '@/i18n/routing'
+import { defaultLocale, isAppLocale } from '@/i18n/routing'
 
 const defaultLayout = 'PostSimple'
 const layouts = {
@@ -27,7 +27,7 @@ export async function generateMetadata(props: {
   params: Promise<{ locale: string; slug: string[] }>
 }): Promise<Metadata | undefined> {
   const params = await props.params
-  const locale = isAppLocale(params.locale) ? params.locale : 'zh-CN'
+  const locale = isAppLocale(params.locale) ? params.locale : defaultLocale
   const slug = decodeURI(params.slug.join('/'))
   const post = await getPostBySlug(slug, { locale })
   if (!post) return
@@ -69,7 +69,7 @@ export async function generateMetadata(props: {
 
 export default async function Page(props: { params: Promise<{ locale: string; slug: string[] }> }) {
   const params = await props.params
-  const locale = isAppLocale(params.locale) ? params.locale : 'zh-CN'
+  const locale = isAppLocale(params.locale) ? params.locale : defaultLocale
   setRequestLocale(locale)
   const slug = decodeURI(params.slug.join('/'))
   const sorted = await getAllPosts({ locale })

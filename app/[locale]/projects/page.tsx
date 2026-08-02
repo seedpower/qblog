@@ -2,7 +2,7 @@ import projectsData from '@/data/projectsData'
 import Card from '@/components/Card'
 import { genPageMetadata } from 'app/seo'
 import { setRequestLocale, getTranslations } from 'next-intl/server'
-import { isAppLocale } from '@/i18n/routing'
+import { defaultLocale, isAppLocale } from '@/i18n/routing'
 
 export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
   const { locale } = await props.params
@@ -12,7 +12,7 @@ export async function generateMetadata(props: { params: Promise<{ locale: string
 
 export default async function Projects(props: { params: Promise<{ locale: string }> }) {
   const { locale } = await props.params
-  const appLocale = isAppLocale(locale) ? locale : 'zh-CN'
+  const appLocale = isAppLocale(locale) ? locale : defaultLocale
   setRequestLocale(appLocale)
   const t = await getTranslations('projects')
 

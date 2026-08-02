@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 import siteMetadata from '@/data/siteMetadata'
 import { getAllPosts } from '@/lib/posts'
-import { locales } from '@/i18n/routing'
+import { defaultLocale, locales } from '@/i18n/routing'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,7 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const routes: MetadataRoute.Sitemap = []
 
   for (const locale of locales) {
-    const prefix = locale === 'zh-CN' ? '' : `/${locale}`
+    const prefix = locale === defaultLocale ? '' : `/${locale}`
     const posts = await getAllPosts({ locale })
 
     for (const route of ['', 'blog', 'projects', 'tags', 'about']) {

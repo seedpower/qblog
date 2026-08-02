@@ -2,7 +2,7 @@ import { setRequestLocale, getTranslations } from 'next-intl/server'
 import ListLayout from '@/layouts/ListLayoutWithTags'
 import { notFound } from 'next/navigation'
 import { getAllPosts, getTagCounts } from '@/lib/posts'
-import { isAppLocale } from '@/i18n/routing'
+import { defaultLocale, isAppLocale } from '@/i18n/routing'
 
 const POSTS_PER_PAGE = 5
 
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function Page(props: { params: Promise<{ locale: string; page: string }> }) {
   const { locale, page } = await props.params
-  const appLocale = isAppLocale(locale) ? locale : 'zh-CN'
+  const appLocale = isAppLocale(locale) ? locale : defaultLocale
   setRequestLocale(appLocale)
   const t = await getTranslations('blog')
 

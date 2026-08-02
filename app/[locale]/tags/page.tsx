@@ -4,7 +4,7 @@ import { slug } from 'github-slugger'
 import { genPageMetadata } from 'app/seo'
 import { getTagCounts } from '@/lib/posts'
 import { setRequestLocale, getTranslations } from 'next-intl/server'
-import { isAppLocale } from '@/i18n/routing'
+import { defaultLocale, isAppLocale } from '@/i18n/routing'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +16,7 @@ export async function generateMetadata(props: { params: Promise<{ locale: string
 
 export default async function Page(props: { params: Promise<{ locale: string }> }) {
   const { locale } = await props.params
-  const appLocale = isAppLocale(locale) ? locale : 'zh-CN'
+  const appLocale = isAppLocale(locale) ? locale : defaultLocale
   setRequestLocale(appLocale)
   const t = await getTranslations('tags')
   const tagCounts = await getTagCounts({ locale: appLocale })

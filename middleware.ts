@@ -32,5 +32,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/(zh-CN|en)/:path*', '/admin', '/admin/:path*', '/((?!api|_next|.*\\..*).*)'],
+  matcher: ['/', '/(en|zh-CN)/:path*', '/admin', '/admin/:path*', '/((?!api|_next|.*\\..*).*)'],
 }

@@ -49,7 +49,7 @@ function generateRss(
 export async function GET(request: NextRequest) {
   const tag = request.nextUrl.searchParams.get('tag')
   const localeParam = request.nextUrl.searchParams.get('locale')
-  const locale = localeParam === 'en' ? 'en' : 'zh-CN'
+  const locale = localeParam === 'zh-CN' ? 'zh-CN' : 'en'
   const posts = await getAllPosts({ locale })
   const filtered = tag ? posts.filter((post) => post.tags.some((t) => slug(t) === tag)) : posts
 
