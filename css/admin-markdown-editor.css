@@ -21,7 +21,8 @@
 .admin-md-compose .w-md-editor {
   position: relative;
   z-index: 1;
-  overflow: hidden;
+  /* Keep radius clipping on content, not the toolbar (title dropdown must escape). */
+  overflow: visible;
   border: 1px solid var(--glass-stroke);
   border-radius: var(--radius-glass, 22px);
   background: var(--glass-tint);
@@ -30,15 +31,109 @@
   box-shadow: var(--shadow-soft), var(--glass-sheen);
   color: var(--ink);
   min-height: min(86vh, 58rem);
+  /* Force opaque canvas for library dropdown vars */
+  --color-canvas-default: #ffffff;
+  --md-editor-background-color: #ffffff;
+}
+
+.dark .admin-md-compose .w-md-editor,
+html.dark .admin-md-compose .w-md-editor {
+  --color-canvas-default: #1a1f2a;
+  --md-editor-background-color: #1a1f2a;
+}
+
+.admin-md-compose .w-md-editor-content {
+  overflow: hidden;
+  border-radius: 0 0 var(--radius-glass, 22px) var(--radius-glass, 22px);
+  background: transparent;
 }
 
 .admin-md-compose .w-md-editor-toolbar {
+  position: relative;
+  z-index: 5;
+  overflow: visible;
   border-bottom: 1px solid var(--glass-stroke);
-  background: color-mix(in srgb, var(--control-fill) 55%, transparent);
+  background: color-mix(in srgb, var(--control-fill) 88%, #ffffff);
   backdrop-filter: blur(16px) saturate(170%);
   -webkit-backdrop-filter: blur(16px) saturate(170%);
   border-radius: var(--radius-glass, 22px) var(--radius-glass, 22px) 0 0;
   padding: 0.4rem 0.55rem;
+}
+
+/* Avoid backdrop-filter compositing making the title popup look see-through. */
+.admin-md-compose .w-md-editor:has(.w-md-editor-toolbar-child.active),
+.admin-md-compose .w-md-editor-toolbar:has(.w-md-editor-toolbar-child.active) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Title / heading group popup — must stay fully opaque over editor text. */
+.admin-md-compose .w-md-editor-toolbar > ul > li {
+  position: relative;
+}
+
+.admin-md-compose .w-md-editor-toolbar > ul > li:has(.w-md-editor-toolbar-child.active) {
+  z-index: 60;
+}
+
+.admin-md-compose .w-md-editor-toolbar-child,
+.admin-md-compose .w-md-editor-toolbar-child.active {
+  z-index: 50 !important;
+  overflow: hidden;
+  border: 1px solid var(--glass-stroke) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow:
+    0 8px 28px rgba(18, 42, 84, 0.18),
+    var(--glass-sheen) !important;
+}
+
+.dark .admin-md-compose .w-md-editor-toolbar-child,
+.dark .admin-md-compose .w-md-editor-toolbar-child.active,
+html.dark .admin-md-compose .w-md-editor-toolbar-child,
+html.dark .admin-md-compose .w-md-editor-toolbar-child.active {
+  background: #1a1f2a !important;
+  background-color: #1a1f2a !important;
+}
+
+.admin-md-compose .w-md-editor-toolbar-child .w-md-editor-toolbar {
+  position: static;
+  z-index: auto;
+  border-bottom: 0 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0.25rem !important;
+}
+
+.dark .admin-md-compose .w-md-editor-toolbar-child .w-md-editor-toolbar,
+html.dark .admin-md-compose .w-md-editor-toolbar-child .w-md-editor-toolbar {
+  background: #1a1f2a !important;
+  background-color: #1a1f2a !important;
+}
+
+.admin-md-compose .w-md-editor-toolbar-child .w-md-editor-toolbar li > button {
+  width: 100%;
+  justify-content: flex-start;
+  color: var(--ink) !important;
+  background-color: transparent;
+}
+
+.admin-md-compose .w-md-editor-toolbar-child .w-md-editor-toolbar li > button:hover,
+.admin-md-compose .w-md-editor-toolbar-child .w-md-editor-toolbar li.active > button {
+  background: color-mix(in srgb, var(--color-primary-500, #0a84ff) 14%, #ffffff) !important;
+}
+
+.dark .admin-md-compose .w-md-editor-toolbar-child .w-md-editor-toolbar li > button:hover,
+.dark .admin-md-compose .w-md-editor-toolbar-child .w-md-editor-toolbar li.active > button,
+html.dark .admin-md-compose .w-md-editor-toolbar-child .w-md-editor-toolbar li > button:hover,
+html.dark .admin-md-compose .w-md-editor-toolbar-child .w-md-editor-toolbar li.active > button {
+  background: color-mix(in srgb, var(--color-primary-500, #0a84ff) 22%, #1a1f2a) !important;
 }
 
 .admin-md-compose .w-md-editor-toolbar li > button {
@@ -57,14 +152,18 @@
   background-color: var(--glass-stroke) !important;
 }
 
-.admin-md-compose .w-md-editor-content {
-  background: transparent;
-}
-
 .admin-md-compose .w-md-editor-preview {
   background: color-mix(in srgb, var(--control-fill) 35%, transparent);
   color: var(--ink);
   box-shadow: inset 1px 0 0 var(--glass-stroke);
+}
+
+.admin-md-compose .w-md-editor-preview .admin-md-mermaid .mermaid {
+  margin: 0;
+  background: color-mix(in srgb, var(--control-fill) 55%, transparent);
+  border: 1px solid var(--glass-stroke);
+  border-radius: 12px;
+  padding: 0.75rem;
 }
 
 /*

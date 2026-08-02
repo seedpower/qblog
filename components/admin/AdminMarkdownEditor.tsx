@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as R
 import { createPortal } from 'react-dom'
 import dynamic from 'next/dynamic'
 import { resolveBlogImageSrc } from '@/utils/resolveBlogImageSrc'
-import '@/css/admin-markdown-editor.css'
+import AdminMdPreviewCode from '@/components/admin/AdminMdPreviewCode'
 import '@uiw/react-md-editor/markdown-editor.css'
+import '@/css/admin-markdown-editor.css'
 
 const MDEditor = dynamic(() => import('@uiw/react-md-editor').then((m) => m.default), {
   ssr: false,
@@ -247,6 +248,9 @@ export default function AdminMarkdownEditor({
 
   const previewOptions = useMemo(
     () => ({
+      components: {
+        code: AdminMdPreviewCode,
+      },
       rehypeRewrite: (node: {
         type?: string
         tagName?: string
