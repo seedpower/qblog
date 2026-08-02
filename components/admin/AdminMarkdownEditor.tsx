@@ -517,7 +517,7 @@ export default function AdminMarkdownEditor({
       setEditorStatus(useSelection ? 'AI editing selection…' : 'AI editing…')
 
       try {
-        const res = await fetch('/api/admin/body-edit', {
+        const res = await fetch('/api/admin/body-edit/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -716,7 +716,7 @@ export default function AdminMarkdownEditor({
     }
     setPickerLoading(true)
     try {
-      const res = await fetch(`/api/admin/media?prefix=${encodeURIComponent(uploadPrefix)}`)
+      const res = await fetch(`/api/admin/media/?prefix=${encodeURIComponent(uploadPrefix)}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to list files')
       setPickerItems(data.objects || [])
@@ -762,7 +762,7 @@ export default function AdminMarkdownEditor({
           form.append('file', file)
           form.append('prefix', uploadPrefix)
           form.append('filename', filename)
-          const res = await fetch('/api/admin/media', { method: 'POST', body: form })
+          const res = await fetch('/api/admin/media/', { method: 'POST', body: form })
           const data = await res.json()
           if (!res.ok) throw new Error(data.error || `Upload failed: ${file.name}`)
 
@@ -818,7 +818,7 @@ export default function AdminMarkdownEditor({
     async (item: { key: string; name: string }) => {
       if (!confirm(`Delete ${item.name} from ${uploadPrefix}?`)) return
       try {
-        const res = await fetch(`/api/admin/media?key=${encodeURIComponent(item.key)}`, {
+        const res = await fetch(`/api/admin/media/?key=${encodeURIComponent(item.key)}`, {
           method: 'DELETE',
         })
         const data = await res.json()

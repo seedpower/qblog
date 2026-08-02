@@ -58,7 +58,7 @@ export default function AdminMediaManager() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`/api/admin/media?prefix=${encodeURIComponent(nextPrefix)}`)
+      const res = await fetch(`/api/admin/media/?prefix=${encodeURIComponent(nextPrefix)}`)
       const data = (await res.json()) as ListResponse
       if (!res.ok) throw new Error(data.error || 'Failed to load media')
       setPrefix(data.prefix || '')
@@ -101,7 +101,7 @@ export default function AdminMediaManager() {
         const form = new FormData()
         form.append('file', file)
         form.append('prefix', prefix)
-        const res = await fetch('/api/admin/media', { method: 'POST', body: form })
+        const res = await fetch('/api/admin/media/', { method: 'POST', body: form })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || `Upload failed: ${file.name}`)
       }
@@ -119,7 +119,7 @@ export default function AdminMediaManager() {
     if (!confirm(`Delete ${key}?`)) return
     setError('')
     try {
-      const res = await fetch(`/api/admin/media?key=${encodeURIComponent(key)}`, {
+      const res = await fetch(`/api/admin/media/?key=${encodeURIComponent(key)}`, {
         method: 'DELETE',
       })
       const data = await res.json()

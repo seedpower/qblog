@@ -47,7 +47,7 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
   const groups = useMemo(() => groupPosts(posts), [posts])
 
   async function logout() {
-    await fetch('/api/admin/login', { method: 'DELETE' })
+    await fetch('/api/admin/login/', { method: 'DELETE' })
     router.replace('/admin/login')
     router.refresh()
   }
@@ -58,7 +58,7 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
     ) {
       return
     }
-    const res = await fetch('/api/admin/translate-all', { method: 'POST' })
+    const res = await fetch('/api/admin/translate-all/', { method: 'POST' })
     const data = await res.json()
     if (!res.ok) {
       alert(data.error || 'Translate failed')
@@ -71,7 +71,7 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
   async function remove(id?: string) {
     if (!id) return
     if (!confirm('Delete this post and all its translations?')) return
-    const res = await fetch(`/api/admin/posts/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/admin/posts/${id}/`, { method: 'DELETE' })
     if (!res.ok) {
       const data = await res.json()
       alert(data.error || 'Delete failed')

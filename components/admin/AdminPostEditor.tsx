@@ -119,7 +119,7 @@ export default function AdminPostEditor({
         locale: form.locale,
         sourceLocale: form.locale,
       }
-      const res = await fetch(isEdit ? `/api/admin/posts/${postId}` : '/api/admin/posts', {
+      const res = await fetch(isEdit ? `/api/admin/posts/${postId}/` : '/api/admin/posts/', {
         method: isEdit ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
