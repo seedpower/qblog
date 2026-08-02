@@ -330,6 +330,12 @@ export default function AdminPostEditor({
           >
             Copy
           </button>
+          <Link
+            href="/admin"
+            className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)]"
+          >
+            Cancel
+          </Link>
         </div>
       </form>
     </div>
