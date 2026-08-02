@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { createPost, getAllPosts } from '@/lib/posts'
-import type { PostInput } from '@/lib/types'
+import { ensurePostTranslation } from '@/lib/translate-post'
+import type { PostInput, PostListItem } from '@/lib/types'
 
 function parsePostInput(body: Record<string, unknown>): PostInput {
   const tagsRaw = body.tags
@@ -39,6 +40,14 @@ function parsePostInput(body: Record<string, unknown>): PostInput {
     layout: body.layout ? String(body.layout) : undefined,
     youtube: body.youtube ? String(body.youtube) : undefined,
     body: String(body.body || ''),
+    locale: body.locale === 'en' ? 'en' : 'zh-CN',
+    translationKey: body.translationKey ? String(body.translationKey) : undefined,
+    sourceLocale:
+      body.sourceLocale === 'en' || body.sourceLocale === 'zh-CN'
+        ? body.sourceLocale
+        : body.locale === 'en'
+          ? 'en'
+          : 'zh-CN',
   }
 }
 
@@ -60,8 +69,27 @@ export async function POST(request: NextRequest) {
     if (!input.title || !input.slug) {
       return NextResponse.json({ error: 'title and slug are required' }, { status: 400 })
     }
+    if (!input.translationKey) {
+      input.translationKey = input.slug
+    }
+    if (!input.sourceLocale) {
+      input.sourceLocale = input.locale
+    }
     const post = await createPost(input)
-    return NextResponse.json({ post }, { status: 201 })
+
+    let translation: PostListItem | null = null
+    let translationError: string | undefined
+    try {
+      if (post._id) {
+        const result = await ensurePostTranslation(post._id)
+        translation = result?.translation || null
+      }
+    } catch (error) {
+      translationError = error instanceof Error ? error.message : 'Translation failed'
+      console.error('[translate]', translationError)
+    }
+
+    return NextResponse.json({ post, translation, translationError }, { status: 201 })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Create failed'
     return NextResponse.json({ error: message }, { status: 500 })

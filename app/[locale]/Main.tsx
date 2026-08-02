@@ -1,32 +1,41 @@
+'use client'
+
 import Image from '@/components/Image'
 import Link from '@/components/Link'
 import Tag from '@/components/Tag'
 import siteMetadata from '@/data/siteMetadata'
 import { formatDate } from 'pliny/utils/formatDate'
 import NewsletterForm from 'pliny/ui/NewsletterForm'
+import { useLocale, useTranslations } from 'next-intl'
+import type { PostListItem } from '@/lib/types'
 
 const MAX_DISPLAY = 10
 
-export default function Home({ posts }) {
+export default function Home({ posts }: { posts: PostListItem[] }) {
+  const t = useTranslations('home')
+  const tSite = useTranslations('site')
+  const tBlog = useTranslations('blog')
+  const locale = useLocale()
+
   return (
     <>
       <div>
         <div className="space-y-2 pt-6 pb-8 md:space-y-5">
           <h1 className="text-3xl leading-9 font-extrabold tracking-tight text-gray-900 sm:text-4xl sm:leading-10 md:text-6xl md:leading-14 dark:text-gray-100">
-            Latest
+            {t('latest')}
           </h1>
           <p className="text-lg leading-7 text-gray-500 dark:text-gray-400">
-            {siteMetadata.description}
+            {tSite('description')}
           </p>
         </div>
         <ul className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-          {!posts.length && 'No posts found.'}
+          {!posts.length && t('noPosts')}
           {posts.slice(0, MAX_DISPLAY).map((post) => {
             const { slug, date, title, summary, tags, coverImage } = post
             return (
               <li key={slug}>
                 <article className="flex flex-col gap-3">
-                  <Link href={`/blog/${slug}`} aria-label={`View post: ${title}`}>
+                  <Link href={`/blog/${slug}`} aria-label={tBlog('viewPost', { title })}>
                     <div className="relative aspect-video w-full overflow-hidden rounded-xl">
                       <Image
                         src={coverImage}
@@ -44,7 +53,7 @@ export default function Home({ posts }) {
                       </Link>
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      <time dateTime={date}>{formatDate(date, siteMetadata.locale)}</time>
+                      <time dateTime={date}>{formatDate(date, locale)}</time>
                     </p>
                     <p className="line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
                       {summary}
@@ -68,9 +77,9 @@ export default function Home({ posts }) {
           <Link
             href="/blog"
             className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
-            aria-label="全部文章"
+            aria-label={t('allPosts')}
           >
-            全部文章 &rarr;
+            {t('allPosts')} &rarr;
           </Link>
         </div>
       )}

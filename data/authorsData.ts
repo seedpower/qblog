@@ -6,9 +6,7 @@ export const authors: Author[] = [
     name: 'Chaowei 超维',
     avatar: '/static/images/avatar.png',
     occupation: '内容创作者',
-    email: 'chaowei2048@gmail.com',
     twitter: 'https://x.com/chaowei2048',
-    github: 'https://github.com/chaowei2048',
     body: `- 2023 - 2024
 > 软件工程师，从事后端开发与云原生运维。
 

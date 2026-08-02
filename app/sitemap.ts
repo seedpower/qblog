@@ -1,22 +1,32 @@
 import { MetadataRoute } from 'next'
 import siteMetadata from '@/data/siteMetadata'
 import { getAllPosts } from '@/lib/posts'
+import { locales } from '@/i18n/routing'
 
 export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = siteMetadata.siteUrl
-  const posts = await getAllPosts()
+  const routes: MetadataRoute.Sitemap = []
 
-  const blogRoutes = posts.map((post) => ({
-    url: `${siteUrl}/${post.path}`,
-    lastModified: post.lastmod || post.date,
-  }))
+  for (const locale of locales) {
+    const prefix = locale === 'zh-CN' ? '' : `/${locale}`
+    const posts = await getAllPosts({ locale })
 
-  const routes = ['', 'blog', 'projects', 'tags'].map((route) => ({
-    url: `${siteUrl}/${route}`,
-    lastModified: new Date().toISOString().split('T')[0],
-  }))
+    for (const route of ['', 'blog', 'projects', 'tags', 'about']) {
+      routes.push({
+        url: `${siteUrl}${prefix}/${route}`.replace(/\/$/, '') || siteUrl,
+        lastModified: new Date().toISOString().split('T')[0],
+      })
+    }
 
-  return [...routes, ...blogRoutes]
+    for (const post of posts) {
+      routes.push({
+        url: `${siteUrl}${prefix}/${post.path}`,
+        lastModified: post.lastmod || post.date,
+      })
+    }
+  }
+
+  return routes
 }

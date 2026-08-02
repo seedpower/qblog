@@ -11,6 +11,8 @@ export type ReadingTime = {
   words: number
 }
 
+export type PostLocale = 'zh-CN' | 'en'
+
 /** List/card view of a blog post (no body). */
 export type PostListItem = {
   _id?: string
@@ -27,6 +29,10 @@ export type PostListItem = {
   slug: string
   path: string
   coverImage: string
+  locale: PostLocale
+  translationKey?: string
+  /** Locale of the human-authored original; auto-translate only when saving this locale. */
+  sourceLocale?: PostLocale
   readingTime?: ReadingTime
 }
 
@@ -50,6 +56,9 @@ export type PostInput = {
   layout?: string
   youtube?: string
   body: string
+  locale: PostLocale
+  translationKey?: string
+  sourceLocale?: PostLocale
 }
 
 export type Author = {

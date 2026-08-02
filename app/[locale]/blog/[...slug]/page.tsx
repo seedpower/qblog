@@ -9,8 +9,10 @@ import { Metadata } from 'next'
 import siteMetadata from '@/data/siteMetadata'
 import { resolveBlogImageSrc } from '@/utils/resolveBlogImageSrc'
 import { notFound } from 'next/navigation'
+import { setRequestLocale } from 'next-intl/server'
 import { getAllPosts, getPostBySlug } from '@/lib/posts'
 import { getAuthorBySlug } from '@/lib/authors'
+import { isAppLocale } from '@/i18n/routing'
 
 const defaultLayout = 'PostSimple'
 const layouts = {
@@ -22,11 +24,12 @@ const layouts = {
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(props: {
-  params: Promise<{ slug: string[] }>
+  params: Promise<{ locale: string; slug: string[] }>
 }): Promise<Metadata | undefined> {
   const params = await props.params
+  const locale = isAppLocale(params.locale) ? params.locale : 'zh-CN'
   const slug = decodeURI(params.slug.join('/'))
-  const post = await getPostBySlug(slug)
+  const post = await getPostBySlug(slug, { locale })
   if (!post) return
 
   const authorList = post.authors || ['default']
@@ -47,7 +50,7 @@ export async function generateMetadata(props: {
       title: post.title,
       description: post.summary,
       siteName: siteMetadata.title,
-      locale: 'en_US',
+      locale: locale === 'en' ? 'en_US' : 'zh_CN',
       type: 'article',
       publishedTime: publishedAt,
       modifiedTime: modifiedAt,
@@ -64,10 +67,12 @@ export async function generateMetadata(props: {
   }
 }
 
-export default async function Page(props: { params: Promise<{ slug: string[] }> }) {
+export default async function Page(props: { params: Promise<{ locale: string; slug: string[] }> }) {
   const params = await props.params
+  const locale = isAppLocale(params.locale) ? params.locale : 'zh-CN'
+  setRequestLocale(locale)
   const slug = decodeURI(params.slug.join('/'))
-  const sorted = await getAllPosts()
+  const sorted = await getAllPosts({ locale })
   const postIndex = sorted.findIndex((p) => p.slug === slug)
   if (postIndex === -1) {
     return notFound()
@@ -75,7 +80,7 @@ export default async function Page(props: { params: Promise<{ slug: string[] }> 
 
   const prev = sorted[postIndex + 1]
   const next = sorted[postIndex - 1]
-  const post = await getPostBySlug(slug)
+  const post = await getPostBySlug(slug, { locale })
   if (!post) return notFound()
 
   const authorList = post.authors || ['default']

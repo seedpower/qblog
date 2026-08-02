@@ -8,7 +8,6 @@ import SectionContainer from '@/components/SectionContainer'
 import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
 import YouTubeEmbed from '@/components/YouTubeEmbed'
-import BuyMeACoffee from '@/components/BuyMeACoffee'
 import type { Author, PostDetail } from '@/lib/types'
 
 interface LayoutProps {
@@ -58,7 +57,6 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
               <div className={`prose dark:prose-invert max-w-none pb-8 ${youtube ? '' : 'pt-10'}`}>
                 {children}
               </div>
-              {siteMetadata.buymeacoffee && <BuyMeACoffee />}
             </div>
             {siteMetadata.comments && (
               <div className="pt-6 pb-6 text-center text-gray-700 dark:text-gray-300" id="comment">

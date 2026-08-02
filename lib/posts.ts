@@ -5,7 +5,7 @@ import { extractTocHeadings } from 'pliny/mdx-plugins/index.js'
 import siteMetadata from '@/data/siteMetadata'
 import { resolveBlogImageSrc } from '@/utils/resolveBlogImageSrc'
 import { getPostsCollection, type PostDocument } from './mongodb'
-import type { PostDetail, PostInput, PostListItem, TocItem } from './types'
+import type { PostDetail, PostInput, PostListItem, PostLocale, TocItem } from './types'
 
 function toIso(value: string | Date | undefined): string | undefined {
   if (!value) return undefined
@@ -23,6 +23,10 @@ function resolveImages(images: unknown, blogPath: string): string[] {
 function coverFrom(images: string[], blogPath: string): string {
   const resolved = resolveImages(images, blogPath)
   return resolved[0] ?? siteMetadata.postDefaultCover
+}
+
+function normalizeLocale(value: unknown): PostLocale {
+  return value === 'en' ? 'en' : 'zh-CN'
 }
 
 function docToListItem(doc: WithId<PostDocument>): PostListItem {
@@ -43,6 +47,9 @@ function docToListItem(doc: WithId<PostDocument>): PostListItem {
     slug: doc.slug,
     path,
     coverImage: coverFrom(doc.images || [], path),
+    locale: normalizeLocale(doc.locale),
+    translationKey: doc.translationKey,
+    sourceLocale: doc.sourceLocale ? normalizeLocale(doc.sourceLocale) : normalizeLocale(doc.locale),
     readingTime: readingTime(doc.body || ''),
   }
 }
@@ -63,6 +70,7 @@ async function docToDetail(
     structuredData: {
       '@context': 'https://schema.org',
       '@type': 'BlogPosting',
+      inLanguage: list.locale,
       headline: list.title,
       datePublished: list.date,
       dateModified: list.lastmod || list.date,
@@ -73,28 +81,39 @@ async function docToDetail(
   }
 }
 
-function publishedFilter(includeDrafts: boolean) {
-  if (includeDrafts) return {}
-  return { draft: { $ne: true } }
+function buildFilter(options?: { includeDrafts?: boolean; locale?: PostLocale }) {
+  const filter: Record<string, unknown> = {}
+  if (!options?.includeDrafts) {
+    filter.draft = { $ne: true }
+  }
+  if (options?.locale) {
+    // Treat missing locale as zh-CN for backward compatibility with seeded docs
+    if (options.locale === 'zh-CN') {
+      filter.$or = [{ locale: 'zh-CN' }, { locale: { $exists: false } }, { locale: null }]
+    } else {
+      filter.locale = options.locale
+    }
+  }
+  return filter
 }
 
-export async function getAllPosts(options?: { includeDrafts?: boolean }): Promise<PostListItem[]> {
+export async function getAllPosts(options?: {
+  includeDrafts?: boolean
+  locale?: PostLocale
+}): Promise<PostListItem[]> {
   const collection = await getPostsCollection()
-  const docs = await collection
-    .find(publishedFilter(Boolean(options?.includeDrafts)))
-    .sort({ date: -1 })
-    .toArray()
+  const docs = await collection.find(buildFilter(options)).sort({ date: -1 }).toArray()
   return docs.map(docToListItem)
 }
 
 export async function getPostBySlug(
   slug: string,
-  options?: { includeDrafts?: boolean }
+  options?: { includeDrafts?: boolean; locale?: PostLocale }
 ): Promise<PostDetail | null> {
   const collection = await getPostsCollection()
-  const doc = await collection.findOne({ slug })
+  const filter: Record<string, unknown> = { slug, ...buildFilter(options) }
+  const doc = await collection.findOne(filter)
   if (!doc) return null
-  if (!options?.includeDrafts && doc.draft) return null
   return docToDetail(doc)
 }
 
@@ -106,13 +125,32 @@ export async function getPostById(id: string): Promise<PostDetail | null> {
   return docToDetail(doc, { resolveImages: false })
 }
 
-export async function getPostsByTag(tag: string): Promise<PostListItem[]> {
-  const posts = await getAllPosts()
+export async function getTranslationSibling(
+  post: Pick<PostListItem, 'translationKey' | 'locale' | 'slug'>,
+  targetLocale: PostLocale
+): Promise<PostListItem | null> {
+  if (!post.translationKey || post.locale === targetLocale) return null
+  const collection = await getPostsCollection()
+  const doc = await collection.findOne({
+    translationKey: post.translationKey,
+    locale: targetLocale,
+    draft: { $ne: true },
+  })
+  return doc ? docToListItem(doc) : null
+}
+
+export async function getPostsByTag(
+  tag: string,
+  options?: { locale?: PostLocale }
+): Promise<PostListItem[]> {
+  const posts = await getAllPosts(options)
   return posts.filter((post) => post.tags.some((t) => slugify(t) === tag))
 }
 
-export async function getTagCounts(): Promise<Record<string, number>> {
-  const posts = await getAllPosts()
+export async function getTagCounts(options?: {
+  locale?: PostLocale
+}): Promise<Record<string, number>> {
+  const posts = await getAllPosts(options)
   const counts: Record<string, number> = {}
   for (const post of posts) {
     for (const tag of post.tags) {
@@ -138,6 +176,9 @@ export async function createPost(input: PostInput): Promise<PostListItem> {
     ...input,
     slug,
     path: `blog/${slug}`,
+    locale: normalizeLocale(input.locale),
+    translationKey: input.translationKey || slug,
+    sourceLocale: normalizeLocale(input.sourceLocale || input.locale),
     tags: input.tags || [],
     images: input.images || [],
     authors: input.authors?.length ? input.authors : ['default'],
@@ -157,6 +198,9 @@ export async function updatePost(id: string, input: PostInput): Promise<PostList
     ...input,
     slug,
     path: `blog/${slug}`,
+    locale: normalizeLocale(input.locale),
+    translationKey: input.translationKey || slug,
+    sourceLocale: normalizeLocale(input.sourceLocale || input.locale),
     tags: input.tags || [],
     images: input.images || [],
     authors: input.authors?.length ? input.authors : ['default'],
@@ -177,4 +221,55 @@ export async function deletePost(id: string): Promise<boolean> {
   const collection = await getPostsCollection()
   const result = await collection.deleteOne({ _id: new ObjectId(id) })
   return result.deletedCount === 1
+}
+
+export async function upsertLocaleSibling(
+  source: PostDetail,
+  translated: {
+    title: string
+    summary?: string
+    body: string
+    tags: string[]
+  }
+): Promise<PostListItem> {
+  const collection = await getPostsCollection()
+  const targetLocale: PostLocale = source.locale === 'en' ? 'zh-CN' : 'en'
+  const translationKey = source.translationKey || source.slug
+  const slug = normalizeSlug(source.slug)
+  const now = new Date()
+
+  const existing = await collection.findOne({ translationKey, locale: targetLocale })
+  const payload = {
+    title: translated.title,
+    slug,
+    path: `blog/${slug}`,
+    date: source.date,
+    lastmod: now.toISOString(),
+    tags: translated.tags?.length ? translated.tags : source.tags,
+    draft: source.draft,
+    summary: translated.summary || '',
+    images: source.images || [],
+    authors: source.authors?.length ? source.authors : ['default'],
+    layout: source.layout,
+    youtube: source.youtube,
+    body: translated.body,
+    locale: targetLocale,
+    translationKey,
+    sourceLocale: source.sourceLocale || source.locale,
+    updatedAt: now,
+  }
+
+  if (existing) {
+    const result = await collection.findOneAndUpdate(
+      { _id: existing._id },
+      { $set: payload },
+      { returnDocument: 'after' }
+    )
+    if (!result) throw new Error('Failed to update translated post')
+    return docToListItem(result)
+  }
+
+  const doc = { ...payload, createdAt: now }
+  const inserted = await collection.insertOne(doc)
+  return docToListItem({ ...doc, _id: inserted.insertedId })
 }

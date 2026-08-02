@@ -1,6 +1,10 @@
+import createMiddleware from 'next-intl/middleware'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { ADMIN_COOKIE, isAdminSessionValid } from '@/lib/auth'
+import { routing } from '@/i18n/routing'
+
+const intlMiddleware = createMiddleware(routing)
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -17,11 +21,16 @@ export async function middleware(request: NextRequest) {
       loginUrl.searchParams.set('next', pathname)
       return NextResponse.redirect(loginUrl)
     }
+    return NextResponse.next()
   }
 
-  return NextResponse.next()
+  if (pathname.startsWith('/api') || pathname.startsWith('/_next') || pathname.includes('.')) {
+    return NextResponse.next()
+  }
+
+  return intlMiddleware(request)
 }
 
 export const config = {
-  matcher: ['/admin', '/admin/:path*'],
+  matcher: ['/', '/(zh-CN|en)/:path*', '/admin', '/admin/:path*', '/((?!api|_next|.*\\..*).*)'],
 }

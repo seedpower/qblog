@@ -13,18 +13,20 @@ const siteMetadata = {
   socialBanner: `${process.env.BASE_PATH || ''}/static/images/twitter-card.png`,
   postDefaultCover: `${process.env.BASE_PATH || ''}/static/images/post-default-cover.png`,
   // mastodon: 'https://mastodon.social/@mastodonuser',
-  email: 'chaowei2048@gmail.com',
-  github: 'https://github.com/chaowei2048',
-  twitter: 'https://x.com/chaowei2048',
+  x: 'https://x.com/chaowei2048',
+  // email: 'address@yoursite.com',
+  // github: 'https://github.com',
+  // twitter: 'https://twitter.com/Twitter',
   // facebook: 'https://facebook.com',
-  youtube: 'https://www.youtube.com/@chaowei2048',
-  buymeacoffee: 'https://buymeacoffee.com/chaowei2048',
+  // youtube: 'https://youtube.com',
   // linkedin: 'https://www.linkedin.com',
   // threads: 'https://www.threads.net',
   // instagram: 'https://www.instagram.com',
   // medium: 'https://medium.com',
   // bluesky: 'https://bsky.app/',
+  // buymeacoffee: 'https://buymeacoffee.com',
   locale: 'zh-CN',
+  locales: ['zh-CN', 'en'],
   // set to true if you want a navbar fixed to the top
   stickyNav: false,
   analytics: {
@@ -56,8 +58,7 @@ const siteMetadata = {
     // Please add your .env file and modify it according to your selection
     provider: '',
   },
-  comments: {
-  },
+  comments: {},
   search: {
     provider: 'kbar', // kbar or algolia
     kbarConfig: {

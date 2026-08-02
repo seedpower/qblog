@@ -13,6 +13,22 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
     router.refresh()
   }
 
+  async function translateAll() {
+    if (!confirm('Auto-translate all posts missing a pair via OpenRouter? This may take a while.')) {
+      return
+    }
+    const res = await fetch('/api/admin/translate-all', { method: 'POST' })
+    const data = await res.json()
+    if (!res.ok) {
+      alert(data.error || 'Translate failed')
+      return
+    }
+    alert(
+      `Done. translated=${data.translated}, skipped=${data.skipped}, failed=${data.failed}`
+    )
+    router.refresh()
+  }
+
   async function remove(id?: string) {
     if (!id) return
     if (!confirm('Delete this post?')) return
@@ -38,6 +54,13 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
           </Link>
           <button
             type="button"
+            onClick={translateAll}
+            className="rounded border border-gray-300 px-4 py-2 text-sm dark:border-gray-600"
+          >
+            Translate missing
+          </button>
+          <button
+            type="button"
             onClick={logout}
             className="rounded border border-gray-300 px-4 py-2 text-sm dark:border-gray-600"
           >
@@ -52,6 +75,7 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
             <tr>
               <th className="px-4 py-3 font-medium">Title</th>
               <th className="px-4 py-3 font-medium">Slug</th>
+              <th className="px-4 py-3 font-medium">Locale</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Date</th>
               <th className="px-4 py-3 font-medium">Actions</th>
@@ -65,6 +89,7 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
               >
                 <td className="px-4 py-3">{post.title}</td>
                 <td className="px-4 py-3 font-mono text-xs">{post.slug}</td>
+                <td className="px-4 py-3">{post.locale || 'zh-CN'}</td>
                 <td className="px-4 py-3">{post.draft ? 'Draft' : 'Published'}</td>
                 <td className="px-4 py-3">{new Date(post.date).toLocaleDateString()}</td>
                 <td className="px-4 py-3">
@@ -95,7 +120,7 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
             ))}
             {posts.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                   No posts yet. Create one or run the seed script.
                 </td>
               </tr>

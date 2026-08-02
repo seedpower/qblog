@@ -1,9 +1,12 @@
 /* eslint-disable jsx-a11y/anchor-has-content */
-import Link from 'next/link'
-import type { LinkProps } from 'next/link'
-import { AnchorHTMLAttributes } from 'react'
+import { Link } from '@/i18n/navigation'
+import type { ComponentProps } from 'react'
 
-const CustomLink = ({ href, ...rest }: LinkProps & AnchorHTMLAttributes<HTMLAnchorElement>) => {
+type Props = ComponentProps<typeof Link> & {
+  href: string
+}
+
+const CustomLink = ({ href, ...rest }: Props) => {
   const isInternalLink = href && href.startsWith('/')
   const isAnchorLink = href && href.startsWith('#')
 

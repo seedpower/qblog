@@ -1,10 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAllPosts } from '@/lib/posts'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
-  const posts = await getAllPosts()
+export async function GET(request: NextRequest) {
+  const localeParam = request.nextUrl.searchParams.get('locale')
+  const locale = localeParam === 'en' ? 'en' : 'zh-CN'
+  const posts = await getAllPosts({ locale })
   const documents = posts.map((post) => ({
     title: post.title,
     date: post.date,
@@ -12,6 +14,7 @@ export async function GET() {
     tags: post.tags,
     slug: post.slug,
     path: post.path,
+    locale: post.locale,
   }))
   return NextResponse.json(documents)
 }

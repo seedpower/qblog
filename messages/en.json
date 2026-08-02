@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "home": "Home",
+    "blog": "Blog",
+    "projects": "Projects",
+    "about": "About"
+  },
+  "home": {
+    "latest": "Latest",
+    "noPosts": "No posts found.",
+    "allPosts": "All Posts"
+  },
+  "blog": {
+    "title": "Blog",
+    "allPosts": "All Posts",
+    "search": "Search articles",
+    "previous": "Previous",
+    "next": "Next",
+    "previousArticle": "Previous Article",
+    "nextArticle": "Next Article",
+    "backToBlog": "Back to the blog",
+    "tags": "Tags",
+    "authors": "Authors",
+    "publishedOn": "Published on",
+    "discussOnX": "Discuss on X",
+    "viewPost": "View post: {title}"
+  },
+  "tags": {
+    "title": "Tags",
+    "empty": "No tags found.",
+    "viewTagged": "View posts tagged {tag}"
+  },
+  "projects": {
+    "title": "Projects",
+    "description": "Showcase your projects with a hero image (16 x 9)"
+  },
+  "about": {
+    "title": "About"
+  },
+  "common": {
+    "language": "Language",
+    "toggleMenu": "Toggle Menu"
+  },
+  "site": {
+    "description": "Latest tech news, product tutorials, and life notes"
+  }
+}

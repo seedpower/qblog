@@ -67,7 +67,13 @@ async function main() {
   const client = new MongoClient(uri)
   await client.connect()
   const collection = client.db(dbName).collection('posts')
-  await collection.createIndex({ slug: 1 }, { unique: true })
+  await collection.createIndex({ slug: 1, locale: 1 }, { unique: true })
+  // Drop legacy slug-only unique index if present
+  try {
+    await collection.dropIndex('slug_1')
+  } catch {
+    // ignore if missing
+  }
 
   let upserted = 0
   for (const file of files) {
@@ -98,6 +104,9 @@ async function main() {
       authors: Array.isArray(data.authors) ? data.authors : ['default'],
       layout: data.layout || undefined,
       youtube: data.youtube || undefined,
+      locale: data.locale === 'en' ? 'en' : 'zh-CN',
+      translationKey: data.translationKey || slug,
+      sourceLocale: data.sourceLocale === 'en' ? 'en' : data.locale === 'en' ? 'en' : 'zh-CN',
       body: content.trim(),
       updatedAt: now,
     }

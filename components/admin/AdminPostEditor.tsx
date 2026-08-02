@@ -16,6 +16,7 @@ type FormState = {
   youtube: string
   layout: string
   body: string
+  locale: 'zh-CN' | 'en'
 }
 
 function toDateInput(value?: string) {
@@ -35,6 +36,7 @@ function initialState(post?: PostDetail | null): FormState {
     youtube: post?.youtube || '',
     layout: post?.layout || 'PostSimple',
     body: post?.body || '',
+    locale: post?.locale || 'zh-CN',
   }
 }
 
@@ -82,6 +84,8 @@ export default function AdminPostEditor({
         layout: form.layout || undefined,
         body: form.body,
         authors: ['default'],
+        locale: form.locale,
+        sourceLocale: form.locale,
       }
       const res = await fetch(isEdit ? `/api/admin/posts/${postId}` : '/api/admin/posts', {
         method: isEdit ? 'PUT' : 'POST',
@@ -91,6 +95,10 @@ export default function AdminPostEditor({
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'Save failed')
+        return
+      }
+      if (data.translationError) {
+        setError(`Saved, but translation failed: ${data.translationError}`)
         return
       }
       router.replace('/admin')
@@ -147,18 +155,33 @@ export default function AdminPostEditor({
             />
           </label>
           <label className="block text-sm">
-            Layout
+            Source language
             <select
-              value={form.layout}
-              onChange={(e) => update('layout', e.target.value)}
+              value={form.locale}
+              onChange={(e) => update('locale', e.target.value as 'zh-CN' | 'en')}
               className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-900"
             >
-              <option value="PostSimple">PostSimple</option>
-              <option value="PostLayout">PostLayout</option>
-              <option value="PostBanner">PostBanner</option>
+              <option value="zh-CN">中文 (zh-CN)</option>
+              <option value="en">English (en)</option>
             </select>
+            <span className="mt-1 block text-xs text-gray-500">
+              Saving auto-translates to the other language via OpenRouter.
+            </span>
           </label>
         </div>
+
+        <label className="block text-sm">
+          Layout
+          <select
+            value={form.layout}
+            onChange={(e) => update('layout', e.target.value)}
+            className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-900"
+          >
+            <option value="PostSimple">PostSimple</option>
+            <option value="PostLayout">PostLayout</option>
+            <option value="PostBanner">PostBanner</option>
+          </select>
+        </label>
 
         <label className="block text-sm">
           Tags (comma separated)
