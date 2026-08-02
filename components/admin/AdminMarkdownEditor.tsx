@@ -1056,14 +1056,15 @@ export default function AdminMarkdownEditor({
           <div
             className="admin-md-picker-backdrop"
             role="presentation"
-            onClick={() => setPickerOpen(false)}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setPickerOpen(false)
+            }}
           >
             <div
               className="admin-md-picker"
               role="dialog"
               aria-modal="true"
               aria-label="Manage post folder"
-              onClick={(e) => e.stopPropagation()}
             >
               <div className="admin-md-picker-head">
                 <div>
@@ -1123,6 +1124,8 @@ export default function AdminMarkdownEditor({
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={item.url} alt={item.name} />
                         ) : item.kind === 'video' ? (
+                          // Admin thumbnail preview only — no captions available.
+                          // eslint-disable-next-line jsx-a11y/media-has-caption
                           <video src={item.url} preload="metadata" />
                         ) : (
                           <span className="admin-md-picker-kind">{item.kind}</span>

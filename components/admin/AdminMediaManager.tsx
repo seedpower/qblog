@@ -260,8 +260,16 @@ export default function AdminMediaManager() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={obj.url} alt={obj.name} className="h-full w-full object-contain" />
                 ) : obj.kind === 'video' ? (
-                  <video src={obj.url} className="h-full w-full object-contain" controls preload="metadata" />
+                  // Admin preview only — source files may not include captions.
+                  // eslint-disable-next-line jsx-a11y/media-has-caption
+                  <video
+                    src={obj.url}
+                    className="h-full w-full object-contain"
+                    controls
+                    preload="metadata"
+                  />
                 ) : obj.kind === 'audio' ? (
+                  // eslint-disable-next-line jsx-a11y/media-has-caption
                   <audio src={obj.url} controls className="w-full px-3" preload="metadata" />
                 ) : (
                   <span className="text-sm text-[var(--ink-soft)]">{kindLabel(obj.kind)}</span>
