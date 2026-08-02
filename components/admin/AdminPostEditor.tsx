@@ -55,8 +55,9 @@ export default function AdminPostEditor({
   const router = useRouter()
   const [form, setForm] = useState<FormState>(() => initialState(initialPost))
   const [error, setError] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [saving, setSaving] = useState<'publish' | 'draft' | null>(null)
   const [copyStatus, setCopyStatus] = useState('')
+  const [editorMeta, setEditorMeta] = useState('0 chars · Markdown')
   const isEdit = Boolean(postId)
 
   const titleHint = useMemo(() => {
@@ -88,13 +89,15 @@ export default function AdminPostEditor({
     }
   }
 
-  async function onSubmit(event: FormEvent) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null
+    const asDraft = submitter?.value !== 'publish'
     if (!form.body.trim()) {
       setError('Body is required')
       return
     }
-    setSaving(true)
+    setSaving(asDraft ? 'draft' : 'publish')
     setError('')
     try {
       const payload = {
@@ -102,7 +105,7 @@ export default function AdminPostEditor({
         slug: form.slug || titleHint,
         date: new Date(form.date).toISOString(),
         tags: form.tags,
-        draft: form.draft,
+        draft: asDraft,
         summary: form.summary,
         images: form.images,
         youtube: form.youtube || undefined,
@@ -131,7 +134,7 @@ export default function AdminPostEditor({
     } catch {
       setError('Save failed')
     } finally {
-      setSaving(false)
+      setSaving(null)
     }
   }
 
@@ -149,158 +152,184 @@ export default function AdminPostEditor({
         </Link>
       </div>
 
-      <form onSubmit={onSubmit} className="glass glass-card">
-        <div className="space-y-4 px-3 py-5 sm:px-4">
-        <label className={labelClass}>
-          Title
-          <input
-            value={form.title}
-            onChange={(e) => update('title', e.target.value)}
-            className={fieldClass}
-            required
-          />
-        </label>
+      <form onSubmit={onSubmit} className="glass glass-card overflow-hidden">
+        <div className="grid lg:grid-cols-[minmax(280px,22rem)_minmax(0,1fr)]">
+          <aside className="space-y-4 border-[var(--glass-stroke)] px-3 py-5 sm:px-4 lg:border-r lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
+            <label className={labelClass}>
+              Title
+              <input
+                value={form.title}
+                onChange={(e) => update('title', e.target.value)}
+                className={fieldClass}
+                required
+              />
+            </label>
 
-        <label className={labelClass}>
-          Slug
-          <input
-            value={form.slug}
-            onChange={(e) => update('slug', e.target.value)}
-            placeholder={titleHint || 'ai-tools/my-post'}
-            className={`${fieldClass} font-mono text-sm`}
-            required={!titleHint}
-          />
-        </label>
+            <label className={labelClass}>
+              Slug
+              <input
+                value={form.slug}
+                onChange={(e) => update('slug', e.target.value)}
+                placeholder={titleHint || 'ai-tools/my-post'}
+                className={`${fieldClass} font-mono text-sm`}
+                required={!titleHint}
+              />
+            </label>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className={labelClass}>
-            Date
-            <input
-              type="date"
-              value={form.date}
-              onChange={(e) => update('date', e.target.value)}
-              className={fieldClass}
-              required
+            <label className={labelClass}>
+              Date
+              <input
+                type="date"
+                value={form.date}
+                onChange={(e) => update('date', e.target.value)}
+                className={fieldClass}
+                required
+              />
+            </label>
+
+            <label className={labelClass}>
+              Source language
+              <select
+                value={form.locale}
+                onChange={(e) => update('locale', e.target.value as 'zh-CN' | 'en')}
+                className={fieldClass}
+              >
+                <option value="zh-CN">中文 (zh-CN)</option>
+                <option value="en">English (en)</option>
+              </select>
+              <span className="mt-1 block text-xs text-[var(--ink-soft)]">
+                Authors usually write in Chinese. Saving auto-translates the other locale via
+                OpenRouter.
+              </span>
+            </label>
+
+            <label className={labelClass}>
+              Layout
+              <select
+                value={form.layout}
+                onChange={(e) => update('layout', e.target.value)}
+                className={fieldClass}
+              >
+                <option value="PostSimple">PostSimple</option>
+                <option value="PostLayout">PostLayout</option>
+                <option value="PostBanner">PostBanner</option>
+              </select>
+            </label>
+
+            <label className={labelClass}>
+              Tags (comma separated)
+              <input
+                value={form.tags}
+                onChange={(e) => update('tags', e.target.value)}
+                className={fieldClass}
+              />
+            </label>
+
+            <label className={labelClass}>
+              Summary
+              <textarea
+                value={form.summary}
+                onChange={(e) => update('summary', e.target.value)}
+                rows={4}
+                className={fieldClass}
+              />
+            </label>
+
+            <label className={labelClass}>
+              Images (comma separated)
+              <input
+                value={form.images}
+                onChange={(e) => update('images', e.target.value)}
+                className={fieldClass}
+                placeholder="cover.png, gallery-1.jpg"
+              />
+              <span className="mt-1 block text-xs text-[var(--ink-soft)]">
+                Bare filenames resolve to{' '}
+                <code className="font-mono text-[10px]">
+                  static.seedpower.app/blog/&#123;slug&#125;/
+                </code>
+                .
+              </span>
+            </label>
+
+            <label className={labelClass}>
+              YouTube URL
+              <input
+                value={form.youtube}
+                onChange={(e) => update('youtube', e.target.value)}
+                className={fieldClass}
+              />
+            </label>
+          </aside>
+
+          <section className="min-w-0 border-t border-[var(--glass-stroke)] px-2 pt-4 pb-2 sm:px-3 lg:border-t-0">
+            <div className="mb-2 px-1">
+              <span className={labelClass}>Body (MDX)</span>
+              <p className="mt-1 text-xs text-[var(--ink-soft)]">
+                Upload / manage files in <code className="font-mono">blog/&#123;slug&#125;/</code>. Select
+                text for AI assist.
+              </p>
+            </div>
+            <AdminMarkdownEditor
+              value={form.body}
+              onChange={(body) => update('body', body)}
+              title={form.title}
+              locale={form.locale}
+              slug={form.slug || titleHint}
+              onMetaChange={setEditorMeta}
+              onFileUploaded={(filename, kind) => {
+                if (kind !== 'image') return
+                setForm((prev) => {
+                  const list = prev.images
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                  if (list.includes(filename)) return prev
+                  return { ...prev, images: [...list, filename].join(', ') }
+                })
+              }}
             />
-          </label>
-          <label className={labelClass}>
-            Source language
-            <select
-              value={form.locale}
-              onChange={(e) => update('locale', e.target.value as 'zh-CN' | 'en')}
-              className={fieldClass}
-            >
-              <option value="zh-CN">中文 (zh-CN)</option>
-              <option value="en">English (en)</option>
-            </select>
-            <span className="mt-1 block text-xs text-[var(--ink-soft)]">
-              Authors usually write in Chinese. Saving auto-translates to English (and vice versa)
-              via OpenRouter. The public site defaults to English.
+          </section>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-[var(--glass-stroke)] px-3 py-3 sm:px-4">
+          <div className="mr-auto flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+            {error && <p className="w-full text-sm text-red-600 sm:w-auto">{error}</p>}
+            <span className="text-xs font-medium text-[var(--ink-soft)]">
+              {form.draft ? 'Current: Draft' : 'Current: Published'}
             </span>
-          </label>
-        </div>
-
-        <label className={labelClass}>
-          Layout
-          <select
-            value={form.layout}
-            onChange={(e) => update('layout', e.target.value)}
-            className={fieldClass}
-          >
-            <option value="PostSimple">PostSimple</option>
-            <option value="PostLayout">PostLayout</option>
-            <option value="PostBanner">PostBanner</option>
-          </select>
-        </label>
-
-        <label className={labelClass}>
-          Tags (comma separated)
-          <input
-            value={form.tags}
-            onChange={(e) => update('tags', e.target.value)}
-            className={fieldClass}
-          />
-        </label>
-
-        <label className={labelClass}>
-          Summary
-          <textarea
-            value={form.summary}
-            onChange={(e) => update('summary', e.target.value)}
-            rows={3}
-            className={fieldClass}
-          />
-        </label>
-
-        <label className={labelClass}>
-          Images (comma separated paths/URLs)
-          <input
-            value={form.images}
-            onChange={(e) => update('images', e.target.value)}
-            className={fieldClass}
-          />
-        </label>
-
-        <label className={labelClass}>
-          YouTube URL
-          <input
-            value={form.youtube}
-            onChange={(e) => update('youtube', e.target.value)}
-            className={fieldClass}
-          />
-        </label>
-
-        <label className="flex items-center gap-2 text-sm text-[var(--ink-soft)]">
-          <input
-            type="checkbox"
-            checked={form.draft}
-            onChange={(e) => update('draft', e.target.checked)}
-            className="text-primary-500 focus:ring-primary-500/40 rounded border-[var(--glass-stroke)]"
-          />
-          Draft (unpublished)
-        </label>
-        </div>
-
-        <div className="border-t border-[var(--glass-stroke)] px-1 pb-2 pt-3 sm:px-2">
-          <div className="mb-2 px-2 sm:px-1">
-            <span className={labelClass}>Body (MDX)</span>
-            <p className="mt-1 text-xs text-[var(--ink-soft)]">
-              Markdown editor with preview. Select text to open AI assist (polish, shorten, expand,
-              continue, custom).
-            </p>
-          </div>
-          <AdminMarkdownEditor
-            value={form.body}
-            onChange={(body) => update('body', body)}
-            title={form.title}
-            locale={form.locale}
-          />
-        </div>
-
-        <div className="space-y-3 border-t border-[var(--glass-stroke)] px-3 py-4 sm:px-4">
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="submit"
-              disabled={saving}
-              className="via-primary-500 rounded-full bg-gradient-to-b from-[#3d9dff] to-[#0a76e6] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(10,132,255,0.35)] transition hover:-translate-y-0.5 disabled:opacity-60"
-            >
-              {saving ? 'Saving…' : isEdit ? 'Update' : 'Create'}
-            </button>
-            <button
-              type="button"
-              onClick={copyBody}
-              className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)]"
-            >
-              Copy
-            </button>
+            <span className="font-mono text-xs text-[var(--ink-soft)]">{editorMeta}</span>
             {copyStatus && (
               <span className="text-xs text-[var(--ink-soft)]" role="status">
                 {copyStatus}
               </span>
             )}
           </div>
+          <button
+            type="submit"
+            name="intent"
+            value="publish"
+            disabled={saving !== null}
+            className="via-primary-500 rounded-full bg-gradient-to-b from-[#3d9dff] to-[#0a76e6] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(10,132,255,0.35)] transition hover:-translate-y-0.5 disabled:opacity-60"
+          >
+            {saving === 'publish' ? 'Publishing…' : 'Publish'}
+          </button>
+          <button
+            type="submit"
+            name="intent"
+            value="draft"
+            disabled={saving !== null}
+            className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)] disabled:opacity-60"
+          >
+            {saving === 'draft' ? 'Saving…' : 'Save as Draft'}
+          </button>
+          <button
+            type="button"
+            onClick={copyBody}
+            className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)]"
+          >
+            Copy
+          </button>
         </div>
       </form>
     </div>

@@ -23,12 +23,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             />
             Seedpower Admin
           </Link>
-          <Link
-            href="/"
-            className="rounded-full px-3 py-1 text-sm text-[var(--ink-soft)] transition hover:bg-white/55 hover:text-[var(--ink)] dark:hover:bg-white/12"
-          >
-            View site
-          </Link>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Link
+              href="/admin"
+              className="rounded-full px-3 py-1 text-sm text-[var(--ink-soft)] transition hover:bg-white/55 hover:text-[var(--ink)] dark:hover:bg-white/12"
+            >
+              Posts
+            </Link>
+            <Link
+              href="/admin/media"
+              className="rounded-full px-3 py-1 text-sm text-[var(--ink-soft)] transition hover:bg-white/55 hover:text-[var(--ink)] dark:hover:bg-white/12"
+            >
+              Media
+            </Link>
+            <Link
+              href="/"
+              className="rounded-full px-3 py-1 text-sm text-[var(--ink-soft)] transition hover:bg-white/55 hover:text-[var(--ink)] dark:hover:bg-white/12"
+            >
+              View site
+            </Link>
+          </div>
         </div>
       </div>
       {children}

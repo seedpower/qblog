@@ -93,6 +93,9 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
           <Link href="/admin/posts/new" className={btnPrimary}>
             New post
           </Link>
+          <Link href="/admin/media" className={btnGlass}>
+            Media
+          </Link>
           <button type="button" onClick={translateAll} className={btnGlass}>
             Translate missing
           </button>

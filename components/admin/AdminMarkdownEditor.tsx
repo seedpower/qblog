@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import dynamic from 'next/dynamic'
+import { resolveBlogImageSrc } from '@/utils/resolveBlogImageSrc'
 import '@/css/admin-markdown-editor.css'
 import '@uiw/react-md-editor/markdown-editor.css'
 
@@ -141,25 +142,74 @@ function getSelectionBounds(textarea: HTMLTextAreaElement, start: number, end: n
   }
 }
 
+function safeUploadFilename(file: File) {
+  const raw = file.name || `file-${Date.now()}`
+  const cleaned = raw
+    .normalize('NFKC')
+    .replace(/[^\w.\u4e00-\u9fff-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+  return cleaned || `file-${Date.now()}`
+}
+
+function fileKindFromName(name: string, mime = ''): 'image' | 'audio' | 'video' | 'other' {
+  const ext = name.split('.').pop()?.toLowerCase() || ''
+  if (
+    mime.startsWith('image/') ||
+    ['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'svg', 'ico', 'bmp'].includes(ext)
+  ) {
+    return 'image'
+  }
+  if (mime.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'].includes(ext)) {
+    return 'audio'
+  }
+  if (mime.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v', 'avi', 'mkv'].includes(ext)) {
+    return 'video'
+  }
+  return 'other'
+}
+
+/** Images keep bare filenames (resolved via blogPath). Other files use public CDN URLs. */
+function markdownForUploadedFile(name: string, url: string, kind: string) {
+  const label = name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ') || name
+  if (kind === 'image') return `![${label}](${name})`
+  if (kind === 'video') return `<video controls src="${url}"></video>`
+  if (kind === 'audio') return `<audio controls src="${url}"></audio>`
+  return `[${name}](${url})`
+}
+
 export default function AdminMarkdownEditor({
   value,
   onChange,
   title,
   locale = 'zh-CN',
+  slug,
+  onFileUploaded,
+  onMetaChange,
 }: {
   value: string
   onChange: (value: string) => void
   title?: string
   locale?: 'zh-CN' | 'en'
+  /** Post slug used as R2 folder: blog/{slug}/ */
+  slug?: string
+  /** Called after a successful upload (bare filename + kind) */
+  onFileUploaded?: (filename: string, kind: 'image' | 'audio' | 'video' | 'other') => void
+  onMetaChange?: (meta: string) => void
 }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const onChangeRef = useRef(onChange)
+  const valueRef = useRef(value)
+  const onFileUploadedRef = useRef(onFileUploaded)
+  const onMetaChangeRef = useRef(onMetaChange)
   const pendingRef = useRef<PendingEdit | null>(null)
   const bubbleSelectionRef = useRef<SelectionSnap | null>(null)
   const bubbleTimerRef = useRef(0)
   const pointerDownRef = useRef(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const manageUploadRef = useRef<HTMLInputElement>(null)
+  const caretRef = useRef<{ start: number; end: number } | null>(null)
 
-  const [meta, setMeta] = useState('0 chars · Markdown')
   const [status, setStatus] = useState('')
   const [statusKind, setStatusKind] = useState<'ok' | 'error' | ''>('')
   const [mounted, setMounted] = useState(false)
@@ -170,12 +220,54 @@ export default function AdminMarkdownEditor({
   const [instruction, setInstruction] = useState('')
   const [busy, setBusy] = useState(false)
   const [highlightRange, setHighlightRange] = useState<{ start: number; end: number } | null>(null)
+  const [mediaBusy, setMediaBusy] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerItems, setPickerItems] = useState<
+    { key: string; name: string; url: string; kind: string }[]
+  >([])
+  const [pickerLoading, setPickerLoading] = useState(false)
 
   const instructionRef = useRef<HTMLInputElement>(null)
   const bubbleRef = useRef<HTMLDivElement>(null)
   const reviewRef = useRef<HTMLDivElement>(null)
 
   onChangeRef.current = onChange
+  valueRef.current = value
+  onFileUploadedRef.current = onFileUploaded
+  onMetaChangeRef.current = onMetaChange
+
+  const uploadPrefix = useMemo(() => {
+    const clean = (slug || '').replace(/^\/+|\/+$/g, '').replace(/\\/g, '/')
+    return clean ? `blog/${clean}/` : ''
+  }, [slug])
+
+  const blogPath = useMemo(() => uploadPrefix.replace(/\/$/, ''), [uploadPrefix])
+
+  const previewOptions = useMemo(
+    () => ({
+      rehypeRewrite: (node: {
+        type?: string
+        tagName?: string
+        properties?: Record<string, unknown>
+      }) => {
+        if (!blogPath || node.type !== 'element' || !node.properties) return
+        const tag = node.tagName
+        const rewrite = (attr: 'src' | 'href') => {
+          const raw = node.properties?.[attr]
+          if (typeof raw !== 'string' || !raw) return
+          const resolved = resolveBlogImageSrc(raw, blogPath)
+          if (resolved && resolved !== raw) {
+            node.properties![attr] = resolved
+          }
+        }
+        if (tag === 'img' || tag === 'video' || tag === 'audio' || tag === 'source') {
+          rewrite('src')
+        }
+        if (tag === 'a') rewrite('href')
+      },
+    }),
+    [blogPath]
+  )
 
   const setEditorStatus = useCallback((message: string, kind: 'ok' | 'error' | '' = '') => {
     setStatus(message)
@@ -198,11 +290,10 @@ export default function AdminMarkdownEditor({
   const updateMeta = useCallback(
     (body = value) => {
       const selected = getSelection().text.length
-      setMeta(
-        selected
-          ? `${body.length} chars · selected ${selected} · Markdown`
-          : `${body.length} chars · Markdown`
-      )
+      const next = selected
+        ? `${body.length} chars · selected ${selected} · Markdown`
+        : `${body.length} chars · Markdown`
+      onMetaChangeRef.current?.(next)
     },
     [getSelection, value]
   )
@@ -574,9 +665,209 @@ export default function AdminMarkdownEditor({
     [hideReview, updateMeta]
   )
 
-  const keepSelection = useCallback((e: MouseEvent) => {
+  const keepSelection = useCallback((e: ReactMouseEvent) => {
     e.preventDefault()
   }, [])
+
+  const rememberCaret = useCallback(() => {
+    const ta = getTextarea(wrapRef.current)
+    if (!ta) return
+    caretRef.current = { start: ta.selectionStart, end: ta.selectionEnd }
+  }, [])
+
+  const insertMarkdown = useCallback(
+    (snippet: string, preferCaret = true) => {
+      const body = valueRef.current
+      const ta = getTextarea(wrapRef.current)
+      const caret =
+        preferCaret && caretRef.current
+          ? caretRef.current
+          : ta
+            ? { start: ta.selectionStart, end: ta.selectionEnd }
+            : { start: body.length, end: body.length }
+
+      const before = body.slice(0, caret.start)
+      const after = body.slice(caret.end)
+      const needsLead = before.length > 0 && !before.endsWith('\n')
+      const needsTrail = after.length > 0 && !after.startsWith('\n')
+      const block = `${needsLead ? '\n' : ''}${snippet}${needsTrail ? '\n' : ''}`
+      const next = before + block + after
+      valueRef.current = next
+      onChangeRef.current(next)
+      updateMeta(next)
+
+      const cursor = before.length + block.length
+      caretRef.current = { start: cursor, end: cursor }
+      requestAnimationFrame(() => {
+        const live = getTextarea(wrapRef.current)
+        if (!live) return
+        live.focus()
+        live.setSelectionRange(cursor, cursor)
+      })
+    },
+    [updateMeta]
+  )
+
+  const loadFolder = useCallback(async () => {
+    if (!uploadPrefix) {
+      setEditorStatus('Set the post slug first to browse blog/{slug}/.', 'error')
+      return
+    }
+    setPickerLoading(true)
+    try {
+      const res = await fetch(`/api/admin/media?prefix=${encodeURIComponent(uploadPrefix)}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to list files')
+      setPickerItems(data.objects || [])
+    } catch (err) {
+      setPickerItems([])
+      setEditorStatus(err instanceof Error ? err.message : 'Failed to list files', 'error')
+    } finally {
+      setPickerLoading(false)
+    }
+  }, [setEditorStatus, uploadPrefix])
+
+  const openFolderManager = useCallback(async () => {
+    if (!uploadPrefix) {
+      setEditorStatus('Set the post slug first to browse blog/{slug}/.', 'error')
+      return
+    }
+    setPickerOpen(true)
+    setEditorStatus('')
+    await loadFolder()
+  }, [loadFolder, setEditorStatus, uploadPrefix])
+
+  const uploadFiles = useCallback(
+    async (files: File[], options?: { insert?: boolean; refresh?: boolean }) => {
+      const shouldInsert = options?.insert !== false
+      const shouldRefresh = options?.refresh || pickerOpen
+      if (!uploadPrefix) {
+        setEditorStatus('Set the post slug first so files upload to blog/{slug}/.', 'error')
+        return
+      }
+      if (!files.length) {
+        setEditorStatus('No files selected.', 'error')
+        return
+      }
+
+      if (shouldInsert) rememberCaret()
+      setMediaBusy(true)
+      setEditorStatus(`Uploading ${files.length} file(s) to ${uploadPrefix}…`)
+
+      try {
+        for (const file of files) {
+          const filename = safeUploadFilename(file)
+          const form = new FormData()
+          form.append('file', file)
+          form.append('prefix', uploadPrefix)
+          form.append('filename', filename)
+          const res = await fetch('/api/admin/media', { method: 'POST', body: form })
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error || `Upload failed: ${file.name}`)
+
+          const name = String(data.key || '').split('/').pop() || filename
+          const url = String(data.url || '')
+          const kind =
+            (data.kind as 'image' | 'audio' | 'video' | 'other') ||
+            fileKindFromName(name, file.type)
+          if (shouldInsert) {
+            insertMarkdown(markdownForUploadedFile(name, url, kind))
+          }
+          onFileUploadedRef.current?.(name, kind)
+        }
+        setEditorStatus(`Uploaded ${files.length} file(s) to ${uploadPrefix}`, 'ok')
+        if (shouldRefresh) await loadFolder()
+      } catch (err) {
+        setEditorStatus(err instanceof Error ? err.message : 'Upload failed', 'error')
+      } finally {
+        setMediaBusy(false)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        if (manageUploadRef.current) manageUploadRef.current.value = ''
+      }
+    },
+    [insertMarkdown, loadFolder, pickerOpen, rememberCaret, setEditorStatus, uploadPrefix]
+  )
+
+  const insertPicked = useCallback(
+    (item: { name: string; url: string; kind: string }) => {
+      rememberCaret()
+      const kind = (['image', 'audio', 'video', 'other'].includes(item.kind)
+        ? item.kind
+        : fileKindFromName(item.name)) as 'image' | 'audio' | 'video' | 'other'
+      insertMarkdown(markdownForUploadedFile(item.name, item.url, kind))
+      onFileUploadedRef.current?.(item.name, kind)
+      setEditorStatus(`Inserted ${item.name}`, 'ok')
+    },
+    [insertMarkdown, rememberCaret, setEditorStatus]
+  )
+
+  const copyText = useCallback(
+    async (label: string, text: string) => {
+      try {
+        await navigator.clipboard.writeText(text)
+        setEditorStatus(`${label} copied.`, 'ok')
+      } catch {
+        setEditorStatus('Copy failed.', 'error')
+      }
+    },
+    [setEditorStatus]
+  )
+
+  const deletePicked = useCallback(
+    async (item: { key: string; name: string }) => {
+      if (!confirm(`Delete ${item.name} from ${uploadPrefix}?`)) return
+      try {
+        const res = await fetch(`/api/admin/media?key=${encodeURIComponent(item.key)}`, {
+          method: 'DELETE',
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Delete failed')
+        setEditorStatus(`Deleted ${item.name}`, 'ok')
+        await loadFolder()
+      } catch (err) {
+        setEditorStatus(err instanceof Error ? err.message : 'Delete failed', 'error')
+      }
+    },
+    [loadFolder, setEditorStatus, uploadPrefix]
+  )
+
+  useEffect(() => {
+    const root = wrapRef.current
+    if (!root) return
+
+    const onPaste = (e: ClipboardEvent) => {
+      const items = Array.from(e.clipboardData?.items || [])
+      const files = items
+        .filter((item) => item.kind === 'file')
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => !!file)
+      if (!files.length) return
+      e.preventDefault()
+      void uploadFiles(files)
+    }
+
+    const onDrop = (e: DragEvent) => {
+      const files = Array.from(e.dataTransfer?.files || [])
+      if (!files.length) return
+      e.preventDefault()
+      void uploadFiles(files)
+    }
+
+    const onDragOver = (e: DragEvent) => {
+      if (Array.from(e.dataTransfer?.types || []).includes('Files')) {
+        e.preventDefault()
+      }
+    }
+
+    root.addEventListener('paste', onPaste)
+    root.addEventListener('drop', onDrop)
+    root.addEventListener('dragover', onDragOver)
+    return () => {
+      root.removeEventListener('paste', onPaste)
+      root.removeEventListener('drop', onDrop)
+      root.removeEventListener('dragover', onDragOver)
+    }
+  }, [uploadFiles])
 
   const bubble = mounted
     ? createPortal(
@@ -687,26 +978,188 @@ export default function AdminMarkdownEditor({
       className={`admin-md-compose${highlightRange ? ' admin-md-has-suggestion' : ''}`}
       data-color-mode="light"
     >
+      <div className="admin-md-media-bar">
+        <div className="admin-md-media-bar-info">
+          <span className="admin-md-media-label">Files</span>
+          <code className="admin-md-media-prefix">
+            {uploadPrefix || 'blog/{slug}/ (set slug first)'}
+          </code>
+        </div>
+        <div className="admin-md-media-bar-actions">
+          <button
+            type="button"
+            className="admin-md-media-btn"
+            disabled={mediaBusy || !uploadPrefix}
+            onClick={() => {
+              rememberCaret()
+              fileInputRef.current?.click()
+            }}
+          >
+            {mediaBusy ? 'Uploading…' : 'Upload file'}
+          </button>
+          <button
+            type="button"
+            className="admin-md-media-btn"
+            disabled={mediaBusy || !uploadPrefix}
+            onClick={() => {
+              rememberCaret()
+              void openFolderManager()
+            }}
+          >
+            Manage folder
+          </button>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            const files = Array.from(e.target.files || [])
+            if (files.length) void uploadFiles(files)
+          }}
+        />
+      </div>
+      <p className="admin-md-media-hint">
+        Upload / paste / drop files into this post folder, or open Manage folder to insert, copy,
+        or delete without leaving the editor. Preview resolves bare image filenames to{' '}
+        <code>{blogPath ? `${blogPath}/filename` : 'blog/{slug}/filename'}</code>.
+      </p>
       <MDEditor
         value={value}
         onChange={handleChange}
         height={680}
         visibleDragbar={false}
-        preview="edit"
+        preview="live"
+        previewOptions={previewOptions}
         textareaProps={{
-          placeholder: 'Write MDX/Markdown… Select text to open the AI menu.',
+          placeholder:
+            'Write MDX/Markdown… Paste or drop files to upload. Select text for AI assist.',
           onSelect: () => {
+            rememberCaret()
             updateMeta()
             scheduleBubble()
           },
+          onClick: rememberCaret,
+          onKeyUp: rememberCaret,
         }}
       />
-      <p className="admin-md-meta">{meta}</p>
-      <p className={`admin-md-status${statusKind ? ` ${statusKind}` : ''}`} role="status">
-        {status}
-      </p>
+      {status ? (
+        <p className={`admin-md-status${statusKind ? ` ${statusKind}` : ''}`} role="status">
+          {status}
+        </p>
+      ) : null}
       {bubble}
       {review}
+      {pickerOpen &&
+        createPortal(
+          <div
+            className="admin-md-picker-backdrop"
+            role="presentation"
+            onClick={() => setPickerOpen(false)}
+          >
+            <div
+              className="admin-md-picker"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Manage post folder"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="admin-md-picker-head">
+                <div>
+                  <h2>Manage folder</h2>
+                  <p>
+                    <code>{uploadPrefix}</code>
+                  </p>
+                </div>
+                <div className="admin-md-picker-head-actions">
+                  <button
+                    type="button"
+                    className="admin-md-media-btn"
+                    disabled={mediaBusy || pickerLoading}
+                    onClick={() => void loadFolder()}
+                  >
+                    Refresh
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-md-media-btn"
+                    disabled={mediaBusy}
+                    onClick={() => manageUploadRef.current?.click()}
+                  >
+                    {mediaBusy ? 'Uploading…' : 'Upload'}
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-md-media-btn"
+                    onClick={() => setPickerOpen(false)}
+                  >
+                    Close
+                  </button>
+                  <input
+                    ref={manageUploadRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || [])
+                      if (files.length) void uploadFiles(files, { insert: false, refresh: true })
+                    }}
+                  />
+                </div>
+              </div>
+              {pickerLoading ? (
+                <p className="admin-md-picker-empty">Loading…</p>
+              ) : pickerItems.length === 0 ? (
+                <p className="admin-md-picker-empty">
+                  No files in this folder yet. Upload here or use Upload file in the editor.
+                </p>
+              ) : (
+                <div className="admin-md-picker-grid">
+                  {pickerItems.map((item) => (
+                    <div key={item.key} className="admin-md-picker-card">
+                      <div className="admin-md-picker-preview">
+                        {item.kind === 'image' ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={item.url} alt={item.name} />
+                        ) : item.kind === 'video' ? (
+                          <video src={item.url} preload="metadata" />
+                        ) : (
+                          <span className="admin-md-picker-kind">{item.kind}</span>
+                        )}
+                      </div>
+                      <p className="admin-md-picker-name" title={item.name}>
+                        {item.name}
+                      </p>
+                      <div className="admin-md-picker-actions">
+                        <button type="button" onClick={() => insertPicked(item)}>
+                          Insert
+                        </button>
+                        <button type="button" onClick={() => void copyText('URL', item.url)}>
+                          URL
+                        </button>
+                        <button type="button" onClick={() => void copyText('Filename', item.name)}>
+                          Name
+                        </button>
+                        <a href={item.url} target="_blank" rel="noreferrer">
+                          Open
+                        </a>
+                        <button
+                          type="button"
+                          className="danger"
+                          onClick={() => void deletePicked(item)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   )
 }

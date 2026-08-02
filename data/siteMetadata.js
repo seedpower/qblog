@@ -7,7 +7,7 @@ const siteMetadata = {
   language: 'en',
   theme: 'system', // system, dark or light
   siteUrl: 'https://blog.seedpower.app',
-  staticCdn: 'https://static.chaowei2048.com',
+  staticCdn: 'https://static.seedpower.app',
   // siteRepo: 'https://github.com/timlrx/tailwind-nextjs-starter-blog',
   siteLogo: `${process.env.BASE_PATH || ''}/static/images/logo.png`,
   socialBanner: `${process.env.BASE_PATH || ''}/static/images/twitter-card.png`,
