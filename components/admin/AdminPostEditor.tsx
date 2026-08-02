@@ -58,6 +58,10 @@ export default function AdminPostEditor({
   const [saving, setSaving] = useState<'publish' | 'draft' | null>(null)
   const [copyStatus, setCopyStatus] = useState('')
   const [editorMeta, setEditorMeta] = useState('0 chars · Markdown')
+  const [editorStatus, setEditorStatus] = useState<{ message: string; kind: 'ok' | 'error' | '' }>({
+    message: '',
+    kind: '',
+  })
   const isEdit = Boolean(postId)
 
   const titleHint = useMemo(() => {
@@ -263,6 +267,7 @@ export default function AdminPostEditor({
               locale={form.locale}
               slug={form.slug || titleHint}
               onMetaChange={setEditorMeta}
+              onStatusChange={setEditorStatus}
               onFileUploaded={(filename, kind) => {
                 if (kind !== 'image') return
                 setForm((prev) => {
@@ -285,6 +290,14 @@ export default function AdminPostEditor({
               {form.draft ? 'Current: Draft' : 'Current: Published'}
             </span>
             <span className="font-mono text-xs text-[var(--ink-soft)]">{editorMeta}</span>
+            {editorStatus.message ? (
+              <p
+                className={`admin-md-status m-0${editorStatus.kind ? ` ${editorStatus.kind}` : ''}`}
+                role="status"
+              >
+                {editorStatus.message}
+              </p>
+            ) : null}
             {copyStatus && (
               <span className="text-xs text-[var(--ink-soft)]" role="status">
                 {copyStatus}

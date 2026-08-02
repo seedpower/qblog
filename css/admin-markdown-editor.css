@@ -211,7 +211,7 @@ html.admin-md-fs .admin-md-compose {
 }
 
 .admin-md-status {
-  margin: 0.2rem 0 0;
+  margin: 0;
   font-size: 0.82rem;
   color: var(--ink-soft);
 }

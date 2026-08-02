@@ -186,6 +186,7 @@ export default function AdminMarkdownEditor({
   slug,
   onFileUploaded,
   onMetaChange,
+  onStatusChange,
 }: {
   value: string
   onChange: (value: string) => void
@@ -196,12 +197,14 @@ export default function AdminMarkdownEditor({
   /** Called after a successful upload (bare filename + kind) */
   onFileUploaded?: (filename: string, kind: 'image' | 'audio' | 'video' | 'other') => void
   onMetaChange?: (meta: string) => void
+  onStatusChange?: (status: { message: string; kind: 'ok' | 'error' | '' }) => void
 }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const onChangeRef = useRef(onChange)
   const valueRef = useRef(value)
   const onFileUploadedRef = useRef(onFileUploaded)
   const onMetaChangeRef = useRef(onMetaChange)
+  const onStatusChangeRef = useRef(onStatusChange)
   const pendingRef = useRef<PendingEdit | null>(null)
   const bubbleSelectionRef = useRef<SelectionSnap | null>(null)
   const bubbleTimerRef = useRef(0)
@@ -210,8 +213,6 @@ export default function AdminMarkdownEditor({
   const manageUploadRef = useRef<HTMLInputElement>(null)
   const caretRef = useRef<{ start: number; end: number } | null>(null)
 
-  const [status, setStatus] = useState('')
-  const [statusKind, setStatusKind] = useState<'ok' | 'error' | ''>('')
   const [mounted, setMounted] = useState(false)
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const [bubbleStyle, setBubbleStyle] = useState<{ left: number; top: number }>({ left: 0, top: 0 })
@@ -235,6 +236,7 @@ export default function AdminMarkdownEditor({
   valueRef.current = value
   onFileUploadedRef.current = onFileUploaded
   onMetaChangeRef.current = onMetaChange
+  onStatusChangeRef.current = onStatusChange
 
   const uploadPrefix = useMemo(() => {
     const clean = (slug || '').replace(/^\/+|\/+$/g, '').replace(/\\/g, '/')
@@ -270,8 +272,7 @@ export default function AdminMarkdownEditor({
   )
 
   const setEditorStatus = useCallback((message: string, kind: 'ok' | 'error' | '' = '') => {
-    setStatus(message)
-    setStatusKind(kind)
+    onStatusChangeRef.current?.({ message, kind })
   }, [])
 
   const getSelection = useCallback((): SelectionSnap => {
@@ -1038,11 +1039,6 @@ export default function AdminMarkdownEditor({
           onKeyUp: rememberCaret,
         }}
       />
-      {status ? (
-        <p className={`admin-md-status${statusKind ? ` ${statusKind}` : ''}`} role="status">
-          {status}
-        </p>
-      ) : null}
       {bubble}
       {review}
       {pickerOpen &&
