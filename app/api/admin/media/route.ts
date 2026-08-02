@@ -13,6 +13,13 @@ export const runtime = 'nodejs'
 
 const MAX_UPLOAD_BYTES = 80 * 1024 * 1024
 
+type UploadBlob = {
+  name?: string
+  type?: string
+  size: number
+  arrayBuffer: () => Promise<ArrayBuffer>
+}
+
 function notConfigured() {
   return NextResponse.json(
     {
@@ -21,6 +28,16 @@ function notConfigured() {
     },
     { status: 503 }
   )
+}
+
+/** Avoid `instanceof File` — some Node runtimes (e.g. Railway) have no global File. */
+function asUploadBlob(value: FormDataEntryValue | null): UploadBlob | null {
+  if (!value || typeof value === 'string') return null
+  const candidate = value as UploadBlob
+  if (typeof candidate.arrayBuffer !== 'function' || typeof candidate.size !== 'number') {
+    return null
+  }
+  return candidate
 }
 
 export async function GET(request: NextRequest) {
@@ -49,11 +66,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const form = await request.formData()
-    const file = form.get('file')
+    const file = asUploadBlob(form.get('file'))
     const prefix = sanitizePrefix(String(form.get('prefix') || ''))
     const customName = String(form.get('filename') || '').trim()
 
-    if (!(file instanceof File)) {
+    if (!file) {
       return NextResponse.json({ error: 'file is required' }, { status: 400 })
     }
     if (file.size <= 0) {
@@ -66,7 +83,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const rawName = customName || file.name
+    const rawName = customName || file.name || 'upload.bin'
     const safeName = sanitizeObjectKey(rawName.split('/').pop() || rawName)
     if (!safeName) {
       return NextResponse.json({ error: 'Invalid filename' }, { status: 400 })
