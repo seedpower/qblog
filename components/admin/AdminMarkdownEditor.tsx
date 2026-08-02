@@ -8,9 +8,7 @@ import '@uiw/react-md-editor/markdown-editor.css'
 
 const MDEditor = dynamic(() => import('@uiw/react-md-editor').then((m) => m.default), {
   ssr: false,
-  loading: () => (
-    <div className="admin-md-loading">Loading markdown editor…</div>
-  ),
+  loading: () => <div className="admin-md-loading">Loading markdown editor…</div>,
 })
 
 type BodyEditAction =
@@ -106,7 +104,10 @@ function getTextareaCaretPoint(textarea: HTMLTextAreaElement, position: number) 
   const mirrorRect = mirror.getBoundingClientRect()
   const taRect = textarea.getBoundingClientRect()
   const lineHeight =
-    markerRect.height || Number.parseFloat(style.lineHeight) || Number.parseFloat(style.fontSize) || 21
+    markerRect.height ||
+    Number.parseFloat(style.lineHeight) ||
+    Number.parseFloat(style.fontSize) ||
+    21
 
   const top =
     taRect.top +
@@ -411,12 +412,11 @@ export default function AdminMarkdownEditor({
       }
 
       const live = getSelection()
-      const sel =
-        bubbleSelectionRef.current?.text?.trim()
-          ? bubbleSelectionRef.current
-          : live.text?.trim()
-            ? live
-            : null
+      const sel = bubbleSelectionRef.current?.text?.trim()
+        ? bubbleSelectionRef.current
+        : live.text?.trim()
+          ? live
+          : null
       const useSelection = action !== 'continue' && !!sel?.text?.trim()
       const selectionSnap = useSelection && sel ? sel : null
 
@@ -456,16 +456,7 @@ export default function AdminMarkdownEditor({
         setBusy(false)
       }
     },
-    [
-      applyRewrite,
-      getSelection,
-      hideBubble,
-      locale,
-      positionReview,
-      setEditorStatus,
-      title,
-      value,
-    ]
+    [applyRewrite, getSelection, hideBubble, locale, positionReview, setEditorStatus, title, value]
   )
 
   useEffect(() => {
@@ -578,9 +569,15 @@ export default function AdminMarkdownEditor({
     ? createPortal(
         <div
           ref={bubbleRef}
-          className={`admin-md-bubble${bubbleVisible ? '' : ' hidden'}`}
+          role="toolbar"
+          aria-label="AI edit actions"
+          tabIndex={-1}
+          className={`admin-md-bubble${bubbleVisible ? '' : 'hidden'}`}
           style={{ left: bubbleStyle.left, top: bubbleStyle.top }}
           onMouseDown={(e) => e.preventDefault()}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') hideBubble()
+          }}
         >
           <div className="admin-md-bubble-actions">
             {BUBBLE_ACTIONS.map(({ action, label }) => (
@@ -641,12 +638,19 @@ export default function AdminMarkdownEditor({
     ? createPortal(
         <div
           ref={reviewRef}
-          className={`admin-md-review${reviewVisible ? '' : ' hidden'}`}
+          role="toolbar"
+          aria-label="AI edit review"
+          tabIndex={-1}
+          className={`admin-md-review${reviewVisible ? '' : 'hidden'}`}
           style={{ left: reviewStyle.left, top: reviewStyle.top }}
           onMouseDown={(e) => e.preventDefault()}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') dismissPending(false)
+          }}
         >
           <span className="admin-md-review-label">
-            AI edit ready{highlightRange ? ` · ${highlightRange.end - highlightRange.start} chars` : ''}
+            AI edit ready
+            {highlightRange ? ` · ${highlightRange.end - highlightRange.start} chars` : ''}
           </span>
           <button
             type="button"
@@ -673,7 +677,7 @@ export default function AdminMarkdownEditor({
   return (
     <div
       ref={wrapRef}
-      className={`admin-md-compose${highlightRange ? ' admin-md-has-suggestion' : ''}`}
+      className={`admin-md-compose${highlightRange ? 'admin-md-has-suggestion' : ''}`}
       data-color-mode="light"
     >
       <MDEditor
