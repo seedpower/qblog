@@ -21,11 +21,50 @@
 .admin-md-compose .w-md-editor {
   position: relative;
   z-index: 1;
+  overflow: hidden;
   border: 1px solid var(--glass-stroke);
-  border-radius: 1rem;
-  background: var(--control-fill);
+  border-radius: var(--radius-glass, 22px);
+  background: var(--glass-tint);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-soft), var(--glass-sheen);
   color: var(--ink);
-  box-shadow: none;
+  min-height: min(78vh, 52rem);
+}
+
+.admin-md-compose .w-md-editor-toolbar {
+  border-bottom: 1px solid var(--glass-stroke);
+  background: color-mix(in srgb, var(--control-fill) 55%, transparent);
+  backdrop-filter: blur(16px) saturate(170%);
+  -webkit-backdrop-filter: blur(16px) saturate(170%);
+  border-radius: var(--radius-glass, 22px) var(--radius-glass, 22px) 0 0;
+  padding: 0.4rem 0.55rem;
+}
+
+.admin-md-compose .w-md-editor-toolbar li > button {
+  color: var(--ink-soft) !important;
+  height: 28px;
+  border-radius: 10px !important;
+}
+
+.admin-md-compose .w-md-editor-toolbar li > button:hover,
+.admin-md-compose .w-md-editor-toolbar li.active > button {
+  background: color-mix(in srgb, var(--color-primary-500, #0a84ff) 14%, transparent) !important;
+  color: var(--color-primary-600, #0a76e6) !important;
+}
+
+.admin-md-compose .w-md-editor-toolbar-divider {
+  background-color: var(--glass-stroke) !important;
+}
+
+.admin-md-compose .w-md-editor-content {
+  background: transparent;
+}
+
+.admin-md-compose .w-md-editor-preview {
+  background: color-mix(in srgb, var(--control-fill) 35%, transparent);
+  color: var(--ink);
+  box-shadow: inset 1px 0 0 var(--glass-stroke);
 }
 
 /*
@@ -83,32 +122,6 @@ html.admin-md-fs .admin-md-compose {
   overflow: visible !important;
 }
 
-.admin-md-compose .w-md-editor-toolbar {
-  border-bottom: 1px solid var(--glass-stroke);
-  background: color-mix(in srgb, var(--control-fill) 88%, white);
-  border-radius: 1rem 1rem 0 0;
-  padding: 0.35rem 0.45rem;
-}
-
-.admin-md-compose .w-md-editor-toolbar li > button {
-  color: var(--ink-soft) !important;
-  height: 28px;
-}
-
-.admin-md-compose .w-md-editor-toolbar li > button:hover,
-.admin-md-compose .w-md-editor-toolbar li.active > button {
-  background: color-mix(in srgb, var(--color-primary-500, #0a84ff) 14%, transparent) !important;
-  color: var(--color-primary-600, #0a76e6) !important;
-}
-
-.admin-md-compose .w-md-editor-toolbar-divider {
-  background-color: var(--glass-stroke) !important;
-}
-
-.admin-md-compose .w-md-editor-content {
-  background: var(--control-fill);
-}
-
 /*
  * Keep highlight <pre><code> and the transparent <textarea> metrics identical.
  * Mismatched font/line-height (common with custom overrides + @tailwindcss/forms)
@@ -122,7 +135,7 @@ html.admin-md-fs .admin-md-compose {
   letter-spacing: normal !important;
   font-variant-ligatures: none !important;
   color: var(--ink) !important;
-  min-height: 36rem;
+  min-height: min(70vh, 44rem);
 }
 
 .admin-md-compose .w-md-editor-text-pre,
@@ -168,24 +181,24 @@ html.admin-md-fs .admin-md-compose {
   letter-spacing: inherit !important;
 }
 
-.admin-md-compose .w-md-editor-preview {
-  background: var(--control-fill);
-  color: var(--ink);
-  box-shadow: inset 1px 0 0 var(--glass-stroke);
-}
-
 .admin-md-compose.admin-md-has-suggestion .w-md-editor {
   border-color: color-mix(in srgb, var(--color-primary-500, #0a84ff) 45%, var(--glass-stroke));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500, #0a84ff) 14%, transparent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--color-primary-500, #0a84ff) 14%, transparent),
+    var(--shadow-soft),
+    var(--glass-sheen);
 }
 
 .admin-md-loading {
-  min-height: 36rem;
+  min-height: min(78vh, 52rem);
   display: grid;
   place-items: center;
   border: 1px solid var(--glass-stroke);
-  border-radius: 1rem;
-  background: var(--control-fill);
+  border-radius: var(--radius-glass, 22px);
+  background: var(--glass-tint);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-soft), var(--glass-sheen);
   color: var(--ink-soft);
   font-size: 0.875rem;
 }
@@ -335,11 +348,14 @@ html.admin-md-fs .admin-md-compose {
   align-items: center;
   justify-content: space-between;
   gap: 0.65rem;
-  margin-bottom: 0.35rem;
-  padding: 0.55rem 0.7rem;
+  margin-bottom: 0.5rem;
+  padding: 0.55rem 0.85rem;
   border: 1px solid var(--glass-stroke);
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--control-fill) 88%, white);
+  border-radius: var(--radius-glass, 22px);
+  background: var(--glass-tint);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-soft), var(--glass-sheen);
 }
 
 .admin-md-media-bar-info {
@@ -374,32 +390,29 @@ html.admin-md-fs .admin-md-compose {
 .admin-md-media-btn {
   border: 1px solid var(--glass-stroke);
   border-radius: 999px;
-  padding: 0.35rem 0.8rem;
-  background: white;
+  padding: 0.35rem 0.85rem;
+  background: color-mix(in srgb, white 55%, transparent);
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
   color: var(--ink-soft);
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .admin-md-media-btn:hover:not(:disabled) {
   color: var(--color-primary-600, #0a76e6);
-  border-color: color-mix(in srgb, var(--color-primary-500, #0a84ff) 40%, var(--glass-stroke));
+  background: color-mix(in srgb, white 72%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary-500, #0a84ff) 35%, var(--glass-stroke));
 }
 
 .admin-md-media-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-}
-
-.admin-md-media-hint {
-  margin: 0 0 0.55rem;
-  font-size: 0.75rem;
-  color: var(--ink-soft);
-}
-
-.admin-md-media-hint code {
-  font-size: 0.72rem;
 }
 
 .admin-md-picker-backdrop {

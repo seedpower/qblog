@@ -1020,21 +1020,15 @@ export default function AdminMarkdownEditor({
           }}
         />
       </div>
-      <p className="admin-md-media-hint">
-        Upload / paste / drop files into this post folder, or open Manage folder to insert, copy,
-        or delete without leaving the editor. Preview resolves bare image filenames to{' '}
-        <code>{blogPath ? `${blogPath}/filename` : 'blog/{slug}/filename'}</code>.
-      </p>
       <MDEditor
         value={value}
         onChange={handleChange}
-        height={680}
+        height="calc(100vh - 11rem)"
         visibleDragbar={false}
         preview="live"
         previewOptions={previewOptions}
         textareaProps={{
-          placeholder:
-            'Write MDX/Markdown… Paste or drop files to upload. Select text for AI assist.',
+          placeholder: 'Write MDX/Markdown…',
           onSelect: () => {
             rememberCaret()
             updateMeta()

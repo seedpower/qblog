@@ -243,13 +243,6 @@ export default function AdminPostEditor({
                 className={fieldClass}
                 placeholder="cover.png, gallery-1.jpg"
               />
-              <span className="mt-1 block text-xs text-[var(--ink-soft)]">
-                Bare filenames resolve to{' '}
-                <code className="font-mono text-[10px]">
-                  static.seedpower.app/blog/&#123;slug&#125;/
-                </code>
-                .
-              </span>
             </label>
 
             <label className={labelClass}>
@@ -263,13 +256,6 @@ export default function AdminPostEditor({
           </aside>
 
           <section className="min-w-0 border-t border-[var(--glass-stroke)] px-2 pt-4 pb-2 sm:px-3 lg:border-t-0">
-            <div className="mb-2 px-1">
-              <span className={labelClass}>Body (MDX)</span>
-              <p className="mt-1 text-xs text-[var(--ink-soft)]">
-                Upload / manage files in <code className="font-mono">blog/&#123;slug&#125;/</code>. Select
-                text for AI assist.
-              </p>
-            </div>
             <AdminMarkdownEditor
               value={form.body}
               onChange={(body) => update('body', body)}
