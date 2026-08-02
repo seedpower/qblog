@@ -6,15 +6,26 @@ export const metadata = {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-      <div className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/admin" className="text-sm font-semibold tracking-tight">
+    <div className="min-h-screen text-[var(--ink)]">
+      <div className="sticky top-0 z-50 px-4 pt-3 sm:px-6">
+        <div className="glass glass-pill mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2.5">
+          <Link
+            href="/admin"
+            className="flex items-center gap-2 text-sm font-semibold tracking-tight text-[var(--ink)]"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/static/favicons/favicon.svg"
+              alt=""
+              width={22}
+              height={22}
+              className="h-5 w-5"
+            />
             Seedpower Admin
           </Link>
           <Link
             href="/"
-            className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-gray-100"
+            className="rounded-full px-3 py-1 text-sm text-[var(--ink-soft)] transition hover:bg-white/55 hover:text-[var(--ink)] dark:hover:bg-white/12"
           >
             View site
           </Link>

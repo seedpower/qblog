@@ -40,6 +40,10 @@ function initialState(post?: PostDetail | null): FormState {
   }
 }
 
+const fieldClass =
+  'glass-strong mt-1 w-full rounded-2xl border border-[var(--glass-stroke)] bg-[var(--control-fill)] px-3 py-2.5 text-[var(--ink)] outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-500/30'
+const labelClass = 'block text-sm font-medium text-[var(--ink-soft)]'
+
 export default function AdminPostEditor({
   postId,
   initialPost,
@@ -111,72 +115,75 @@ export default function AdminPostEditor({
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10">
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
+      <div className="glass glass-card mb-6 flex items-center justify-between gap-3 px-5 py-4">
+        <h1 className="text-3xl font-bold tracking-tight text-[var(--ink)]">
           {isEdit ? 'Edit post' : 'New post'}
         </h1>
-        <Link href="/admin" className="text-sm text-gray-500 hover:underline">
+        <Link
+          href="/admin"
+          className="glass glass-pill px-3 py-1.5 text-sm text-[var(--ink-soft)] transition hover:text-[var(--ink)]"
+        >
           Back to list
         </Link>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-4">
-        <label className="block text-sm">
+      <form onSubmit={onSubmit} className="glass glass-card space-y-4 px-5 py-6 sm:px-6">
+        <label className={labelClass}>
           Title
           <input
             value={form.title}
             onChange={(e) => update('title', e.target.value)}
-            className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-900"
+            className={fieldClass}
             required
           />
         </label>
 
-        <label className="block text-sm">
+        <label className={labelClass}>
           Slug
           <input
             value={form.slug}
             onChange={(e) => update('slug', e.target.value)}
             placeholder={titleHint || 'ai-tools/my-post'}
-            className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 font-mono text-sm dark:border-gray-600 dark:bg-gray-900"
+            className={`${fieldClass} font-mono text-sm`}
             required={!titleHint}
           />
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm">
+          <label className={labelClass}>
             Date
             <input
               type="date"
               value={form.date}
               onChange={(e) => update('date', e.target.value)}
-              className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-900"
+              className={fieldClass}
               required
             />
           </label>
-          <label className="block text-sm">
+          <label className={labelClass}>
             Source language
             <select
               value={form.locale}
               onChange={(e) => update('locale', e.target.value as 'zh-CN' | 'en')}
-              className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-900"
+              className={fieldClass}
             >
               <option value="zh-CN">中文 (zh-CN)</option>
               <option value="en">English (en)</option>
             </select>
-            <span className="mt-1 block text-xs text-gray-500">
+            <span className="mt-1 block text-xs text-[var(--ink-soft)]">
               Authors usually write in Chinese. Saving auto-translates to English (and vice versa)
               via OpenRouter. The public site defaults to English.
             </span>
           </label>
         </div>
 
-        <label className="block text-sm">
+        <label className={labelClass}>
           Layout
           <select
             value={form.layout}
             onChange={(e) => update('layout', e.target.value)}
-            className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-900"
+            className={fieldClass}
           >
             <option value="PostSimple">PostSimple</option>
             <option value="PostLayout">PostLayout</option>
@@ -184,59 +191,60 @@ export default function AdminPostEditor({
           </select>
         </label>
 
-        <label className="block text-sm">
+        <label className={labelClass}>
           Tags (comma separated)
           <input
             value={form.tags}
             onChange={(e) => update('tags', e.target.value)}
-            className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-900"
+            className={fieldClass}
           />
         </label>
 
-        <label className="block text-sm">
+        <label className={labelClass}>
           Summary
           <textarea
             value={form.summary}
             onChange={(e) => update('summary', e.target.value)}
             rows={3}
-            className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-900"
+            className={fieldClass}
           />
         </label>
 
-        <label className="block text-sm">
+        <label className={labelClass}>
           Images (comma separated paths/URLs)
           <input
             value={form.images}
             onChange={(e) => update('images', e.target.value)}
-            className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-900"
+            className={fieldClass}
           />
         </label>
 
-        <label className="block text-sm">
+        <label className={labelClass}>
           YouTube URL
           <input
             value={form.youtube}
             onChange={(e) => update('youtube', e.target.value)}
-            className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-900"
+            className={fieldClass}
           />
         </label>
 
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 text-sm text-[var(--ink-soft)]">
           <input
             type="checkbox"
             checked={form.draft}
             onChange={(e) => update('draft', e.target.checked)}
+            className="text-primary-500 focus:ring-primary-500/40 rounded border-[var(--glass-stroke)]"
           />
           Draft (unpublished)
         </label>
 
-        <label className="block text-sm">
+        <label className={labelClass}>
           Body (MDX)
           <textarea
             value={form.body}
             onChange={(e) => update('body', e.target.value)}
             rows={24}
-            className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 font-mono text-sm dark:border-gray-600 dark:bg-gray-900"
+            className={`${fieldClass} font-mono text-sm`}
             required
           />
         </label>
@@ -246,7 +254,7 @@ export default function AdminPostEditor({
         <button
           type="submit"
           disabled={saving}
-          className="rounded bg-gray-900 px-5 py-2 text-white disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900"
+          className="via-primary-500 rounded-full bg-gradient-to-b from-[#3d9dff] to-[#0a76e6] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(10,132,255,0.35)] transition hover:-translate-y-0.5 disabled:opacity-60"
         >
           {saving ? 'Saving…' : isEdit ? 'Update' : 'Create'}
         </button>

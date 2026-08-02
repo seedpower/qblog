@@ -35,15 +35,22 @@ export default function AdminLoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto mt-24 max-w-sm space-y-4">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Admin Login</h1>
-      <label className="block text-sm text-gray-600 dark:text-gray-300">
+    <form
+      onSubmit={onSubmit}
+      className="glass glass-card mx-auto mt-20 max-w-sm space-y-4 px-6 py-7 sm:mt-28"
+    >
+      <div className="flex items-center gap-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/static/favicons/favicon.svg" alt="" width={28} height={28} className="h-7 w-7" />
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--ink)]">Admin Login</h1>
+      </div>
+      <label className="block text-sm font-medium text-[var(--ink-soft)]">
         Password
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-900"
+          className="glass-strong focus:border-primary-400 focus:ring-primary-500/30 mt-1 w-full rounded-2xl border border-[var(--glass-stroke)] bg-[var(--control-fill)] px-3 py-2.5 text-[var(--ink)] transition outline-none focus:ring-2"
           required
         />
       </label>
@@ -51,7 +58,7 @@ export default function AdminLoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded bg-gray-900 px-4 py-2 text-white disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900"
+        className="via-primary-500 w-full rounded-full bg-gradient-to-b from-[#3d9dff] to-[#0a76e6] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(10,132,255,0.35)] transition hover:-translate-y-0.5 disabled:opacity-60"
       >
         {loading ? 'Signing in…' : 'Sign in'}
       </button>

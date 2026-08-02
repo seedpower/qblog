@@ -28,7 +28,7 @@ export default async function ArticleTOC({ toc }: ArticleTOCProps) {
       </p>
       <TOCInline
         toc={toc}
-        ulClassName="space-y-1.5 [&_a]:text-sm [&_a]:leading-snug [&_a]:text-[var(--ink-soft)] [&_a]:no-underline hover:[&_a]:text-primary-600 dark:hover:[&_a]:text-primary-400 [&_ul]:mt-1.5 [&_ul]:ml-3 [&_ul]:list-none [&_ul]:space-y-1.5"
+        ulClassName="space-y-1.5 [&_a]:text-sm [&_a]:leading-snug [&_a]:text-[var(--ink-soft)] [&_a]:no-underline [&_a:hover]:text-primary-600 dark:[&_a:hover]:text-primary-400 [&_ul]:mt-1.5 [&_ul]:ml-3 [&_ul]:list-none [&_ul]:space-y-1.5"
       />
     </aside>
   )
