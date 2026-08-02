@@ -658,6 +658,11 @@ export default function AdminMarkdownEditor({
     }
 
     const onKeyUp = () => {
+      // Typing in the bubble instruction field clears the textarea selection;
+      // don't treat that as “deselected” and hide the menu mid-keystroke.
+      const active = document.activeElement
+      if (bubbleRef.current?.contains(active)) return
+      if (reviewRef.current?.contains(active)) return
       updateMeta()
       scheduleBubble()
     }
@@ -693,7 +698,14 @@ export default function AdminMarkdownEditor({
   )
 
   const keepSelection = useCallback((e: ReactMouseEvent) => {
+    // Buttons: preventDefault keeps the textarea selection when clicking the bubble.
+    // Do NOT use this on text inputs — it blocks focus and typing.
     e.preventDefault()
+  }, [])
+
+  const focusInstruction = useCallback((e: ReactMouseEvent<HTMLInputElement>) => {
+    // Allow default focus behavior; just stop the event from reaching the editor.
+    e.stopPropagation()
   }, [])
 
   const rememberCaret = useCallback(() => {
@@ -926,8 +938,9 @@ export default function AdminMarkdownEditor({
               onChange={(e) => setInstruction(e.target.value)}
               placeholder="Custom instruction…"
               disabled={busy}
-              onMouseDown={keepSelection}
+              onMouseDown={focusInstruction}
               onKeyDown={(e) => {
+                e.stopPropagation()
                 if (e.key === 'Enter') {
                   e.preventDefault()
                   const text = instruction.trim()
