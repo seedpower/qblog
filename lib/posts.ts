@@ -153,12 +153,13 @@ export async function getChineseSourcePostId(
 
   const collection = await getPostsCollection()
   const translationKey = post.translationKey || post.slug
-  const doc = await collection.findOne({
+  const filter: Record<string, unknown> = {
     $and: [
       { $or: [{ translationKey }, { slug: post.slug }] },
       { $or: [{ locale: 'zh-CN' }, { locale: { $exists: false } }, { locale: null }] },
     ],
-  })
+  }
+  const doc = await collection.findOne(filter)
   return doc ? doc._id.toString() : post._id
 }
 
