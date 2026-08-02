@@ -151,117 +151,117 @@ export default function AdminPostEditor({
 
       <form onSubmit={onSubmit} className="glass glass-card">
         <div className="space-y-4 px-3 py-5 sm:px-4">
+        <label className={labelClass}>
+          Title
+          <input
+            value={form.title}
+            onChange={(e) => update('title', e.target.value)}
+            className={fieldClass}
+            required
+          />
+        </label>
+
+        <label className={labelClass}>
+          Slug
+          <input
+            value={form.slug}
+            onChange={(e) => update('slug', e.target.value)}
+            placeholder={titleHint || 'ai-tools/my-post'}
+            className={`${fieldClass} font-mono text-sm`}
+            required={!titleHint}
+          />
+        </label>
+
+        <div className="grid gap-4 sm:grid-cols-2">
           <label className={labelClass}>
-            Title
+            Date
             <input
-              value={form.title}
-              onChange={(e) => update('title', e.target.value)}
+              type="date"
+              value={form.date}
+              onChange={(e) => update('date', e.target.value)}
               className={fieldClass}
               required
             />
           </label>
-
           <label className={labelClass}>
-            Slug
-            <input
-              value={form.slug}
-              onChange={(e) => update('slug', e.target.value)}
-              placeholder={titleHint || 'ai-tools/my-post'}
-              className={`${fieldClass} font-mono text-sm`}
-              required={!titleHint}
-            />
-          </label>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className={labelClass}>
-              Date
-              <input
-                type="date"
-                value={form.date}
-                onChange={(e) => update('date', e.target.value)}
-                className={fieldClass}
-                required
-              />
-            </label>
-            <label className={labelClass}>
-              Source language
-              <select
-                value={form.locale}
-                onChange={(e) => update('locale', e.target.value as 'zh-CN' | 'en')}
-                className={fieldClass}
-              >
-                <option value="zh-CN">中文 (zh-CN)</option>
-                <option value="en">English (en)</option>
-              </select>
-              <span className="mt-1 block text-xs text-[var(--ink-soft)]">
-                Authors usually write in Chinese. Saving auto-translates to English (and vice versa)
-                via OpenRouter. The public site defaults to English.
-              </span>
-            </label>
-          </div>
-
-          <label className={labelClass}>
-            Layout
+            Source language
             <select
-              value={form.layout}
-              onChange={(e) => update('layout', e.target.value)}
+              value={form.locale}
+              onChange={(e) => update('locale', e.target.value as 'zh-CN' | 'en')}
               className={fieldClass}
             >
-              <option value="PostSimple">PostSimple</option>
-              <option value="PostLayout">PostLayout</option>
-              <option value="PostBanner">PostBanner</option>
+              <option value="zh-CN">中文 (zh-CN)</option>
+              <option value="en">English (en)</option>
             </select>
-          </label>
-
-          <label className={labelClass}>
-            Tags (comma separated)
-            <input
-              value={form.tags}
-              onChange={(e) => update('tags', e.target.value)}
-              className={fieldClass}
-            />
-          </label>
-
-          <label className={labelClass}>
-            Summary
-            <textarea
-              value={form.summary}
-              onChange={(e) => update('summary', e.target.value)}
-              rows={3}
-              className={fieldClass}
-            />
-          </label>
-
-          <label className={labelClass}>
-            Images (comma separated paths/URLs)
-            <input
-              value={form.images}
-              onChange={(e) => update('images', e.target.value)}
-              className={fieldClass}
-            />
-          </label>
-
-          <label className={labelClass}>
-            YouTube URL
-            <input
-              value={form.youtube}
-              onChange={(e) => update('youtube', e.target.value)}
-              className={fieldClass}
-            />
-          </label>
-
-          <label className="flex items-center gap-2 text-sm text-[var(--ink-soft)]">
-            <input
-              type="checkbox"
-              checked={form.draft}
-              onChange={(e) => update('draft', e.target.checked)}
-              className="text-primary-500 focus:ring-primary-500/40 rounded border-[var(--glass-stroke)]"
-            />
-            Draft (unpublished)
+            <span className="mt-1 block text-xs text-[var(--ink-soft)]">
+              Authors usually write in Chinese. Saving auto-translates to English (and vice versa)
+              via OpenRouter. The public site defaults to English.
+            </span>
           </label>
         </div>
 
-        <div className="border-t border-[var(--glass-stroke)] px-1 pt-3 pb-2 sm:px-2">
+        <label className={labelClass}>
+          Layout
+          <select
+            value={form.layout}
+            onChange={(e) => update('layout', e.target.value)}
+            className={fieldClass}
+          >
+            <option value="PostSimple">PostSimple</option>
+            <option value="PostLayout">PostLayout</option>
+            <option value="PostBanner">PostBanner</option>
+          </select>
+        </label>
+
+        <label className={labelClass}>
+          Tags (comma separated)
+          <input
+            value={form.tags}
+            onChange={(e) => update('tags', e.target.value)}
+            className={fieldClass}
+          />
+        </label>
+
+        <label className={labelClass}>
+          Summary
+          <textarea
+            value={form.summary}
+            onChange={(e) => update('summary', e.target.value)}
+            rows={3}
+            className={fieldClass}
+          />
+        </label>
+
+        <label className={labelClass}>
+          Images (comma separated paths/URLs)
+          <input
+            value={form.images}
+            onChange={(e) => update('images', e.target.value)}
+            className={fieldClass}
+          />
+        </label>
+
+        <label className={labelClass}>
+          YouTube URL
+          <input
+            value={form.youtube}
+            onChange={(e) => update('youtube', e.target.value)}
+            className={fieldClass}
+          />
+        </label>
+
+        <label className="flex items-center gap-2 text-sm text-[var(--ink-soft)]">
+          <input
+            type="checkbox"
+            checked={form.draft}
+            onChange={(e) => update('draft', e.target.checked)}
+            className="text-primary-500 focus:ring-primary-500/40 rounded border-[var(--glass-stroke)]"
+          />
+          Draft (unpublished)
+        </label>
+        </div>
+
+        <div className="border-t border-[var(--glass-stroke)] px-1 pb-2 pt-3 sm:px-2">
           <div className="mb-2 px-2 sm:px-1">
             <span className={labelClass}>Body (MDX)</span>
             <p className="mt-1 text-xs text-[var(--ink-soft)]">
