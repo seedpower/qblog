@@ -16,7 +16,7 @@ export default async function Page(props: { params: Promise<{ locale: string }> 
   const { locale } = await props.params
   const appLocale = isAppLocale(locale) ? locale : defaultLocale
   setRequestLocale(appLocale)
-  const author = getAuthorBySlug('default')
+  const author = getAuthorBySlug('default', appLocale)
   if (!author) notFound()
 
   return (
