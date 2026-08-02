@@ -105,7 +105,7 @@ export default async function Page(props: { params: Promise<{ locale: string; sl
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <AdminEditPostLink postId={post._id} />
+      <AdminEditPostLink post={post} />
       <Layout content={post} authorDetails={authorDetails} next={next} prev={prev}>
         <MDXContent source={post.body} blogPath={post.path} />
       </Layout>

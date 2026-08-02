@@ -141,6 +141,27 @@ export async function getTranslationSibling(
   return doc ? docToListItem(doc) : null
 }
 
+/**
+ * Prefer the zh-CN source document id for admin editing.
+ * Falls back to the current post id when no Chinese sibling exists.
+ */
+export async function getChineseSourcePostId(
+  post: Pick<PostListItem, '_id' | 'translationKey' | 'locale' | 'slug'>
+): Promise<string | undefined> {
+  if (!post._id) return undefined
+  if (post.locale === 'zh-CN') return post._id
+
+  const collection = await getPostsCollection()
+  const translationKey = post.translationKey || post.slug
+  const doc = await collection.findOne({
+    $and: [
+      { $or: [{ translationKey }, { slug: post.slug }] },
+      { $or: [{ locale: 'zh-CN' }, { locale: { $exists: false } }, { locale: null }] },
+    ],
+  })
+  return doc ? doc._id.toString() : post._id
+}
+
 export async function getPostsByTag(
   tag: string,
   options?: { locale?: PostLocale }

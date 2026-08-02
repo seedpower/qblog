@@ -1,9 +1,17 @@
 import Link from 'next/link'
 import { requireAdmin } from '@/lib/auth'
+import { getChineseSourcePostId } from '@/lib/posts'
+import type { PostListItem } from '@/lib/types'
 
-export default async function AdminEditPostLink({ postId }: { postId?: string }) {
-  if (!postId) return null
+export default async function AdminEditPostLink({
+  post,
+}: {
+  post: Pick<PostListItem, '_id' | 'translationKey' | 'locale' | 'slug'>
+}) {
   if (!(await requireAdmin())) return null
+
+  const postId = await getChineseSourcePostId(post)
+  if (!postId) return null
 
   return (
     <div className="pointer-events-none fixed top-24 right-4 z-40 sm:right-6">
