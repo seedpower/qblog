@@ -3,23 +3,22 @@
 import { usePathname } from 'next/navigation'
 import { slug } from 'github-slugger'
 import { formatDate } from 'pliny/utils/formatDate'
-import { CoreContent } from 'pliny/utils/contentlayer'
-import type { Blog } from 'contentlayer/generated'
 import Image from '@/components/Image'
 import Link from '@/components/Link'
 import Tag from '@/components/Tag'
 import siteMetadata from '@/data/siteMetadata'
-import tagData from 'app/tag-data.json'
+import type { PostListItem } from '@/lib/types'
 
 interface PaginationProps {
   totalPages: number
   currentPage: number
 }
 interface ListLayoutProps {
-  posts: CoreContent<Blog>[]
+  posts: PostListItem[]
   title: string
-  initialDisplayPosts?: CoreContent<Blog>[]
+  initialDisplayPosts?: PostListItem[]
   pagination?: PaginationProps
+  tagCounts?: Record<string, number>
 }
 
 function Pagination({ totalPages, currentPage }: PaginationProps) {
@@ -72,9 +71,9 @@ export default function ListLayoutWithTags({
   title,
   initialDisplayPosts = [],
   pagination,
+  tagCounts = {},
 }: ListLayoutProps) {
   const pathname = usePathname()
-  const tagCounts = tagData as Record<string, number>
   const tagKeys = Object.keys(tagCounts)
   const sortedTags = tagKeys.sort((a, b) => tagCounts[b] - tagCounts[a])
 
@@ -163,7 +162,9 @@ export default function ListLayoutWithTags({
                               </Link>
                             </h2>
                             <div className="flex flex-wrap">
-                              {tags?.map((tag) => <Tag key={tag} text={tag} />)}
+                              {tags?.map((tag) => (
+                                <Tag key={tag} text={tag} />
+                              ))}
                             </div>
                           </div>
                           <div className="prose max-w-none text-gray-500 dark:text-gray-400">

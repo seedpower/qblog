@@ -1,9 +1,8 @@
 # Inspired from https://github.com/actions/starter-workflows/blob/main/pages/nextjs.yml
+# Disabled: site is now deployed on Railway (see railway.toml).
 name: GitHub Pages
 
 on:
-  push:
-    branches: main
   workflow_dispatch:
 
 permissions:
@@ -43,7 +42,6 @@ jobs:
         with:
           path: ./out
 
-  # Deployment job
   deploy:
     environment:
       name: github-pages

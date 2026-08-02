@@ -1,9 +1,7 @@
-const { withContentlayer } = require('next-contentlayer2')
-const siteMetadata = require('./data/siteMetadata')
-
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 })
+const siteMetadata = require('./data/siteMetadata')
 
 // You might need to insert additional domains in script-src if you are using external services
 const ContentSecurityPolicy = `
@@ -71,7 +69,7 @@ const staticCdnHostname = (() => {
  * @type {import('next/dist/next-server/server/config').NextConfig}
  **/
 module.exports = () => {
-  const plugins = [withContentlayer, withBundleAnalyzer]
+  const plugins = [withBundleAnalyzer]
   return plugins.reduce((acc, next) => next(acc), {
     output,
     basePath,

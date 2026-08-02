@@ -1,7 +1,5 @@
 import { ReactNode } from 'react'
 import { formatDate } from 'pliny/utils/formatDate'
-import { CoreContent } from 'pliny/utils/contentlayer'
-import type { Authors, Blog } from 'contentlayer/generated'
 import ArticleTOC from '@/components/ArticleTOC'
 import Comments from '@/components/Comments'
 import Link from '@/components/Link'
@@ -11,10 +9,11 @@ import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
 import YouTubeEmbed from '@/components/YouTubeEmbed'
 import BuyMeACoffee from '@/components/BuyMeACoffee'
+import type { Author, PostDetail } from '@/lib/types'
 
 interface LayoutProps {
-  content: CoreContent<Blog>
-  authorDetails: CoreContent<Authors>[]
+  content: PostDetail
+  authorDetails: Author[]
   children: ReactNode
   next?: { path: string; title: string }
   prev?: { path: string; title: string }
@@ -37,7 +36,9 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
               <dl>
                 <div className="text-base leading-6 font-medium text-gray-500 dark:text-gray-400">
                   <dt className="sr-only">Authors</dt>
-                  <dd className="inline">{authorDetails.map((author) => author.name).join(', ')}</dd>
+                  <dd className="inline">
+                    {authorDetails.map((author) => author.name).join(', ')}
+                  </dd>
                   <dt className="sr-only">Published on</dt>
                   <dd className="inline">
                     <span aria-hidden="true"> · </span>

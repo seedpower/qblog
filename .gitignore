@@ -47,3 +47,7 @@ yarn-error.log*
 .contentlayer
 
 app/tag-data.json
+.env.railway.local
+
+# typescript
+*.tsbuildinfo
