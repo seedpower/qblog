@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { PostDetail } from '@/lib/types'
+import AdminMarkdownEditor from '@/components/admin/AdminMarkdownEditor'
 
 type FormState = {
   title: string
@@ -55,6 +56,7 @@ export default function AdminPostEditor({
   const [form, setForm] = useState<FormState>(() => initialState(initialPost))
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [copyStatus, setCopyStatus] = useState('')
   const isEdit = Boolean(postId)
 
   const titleHint = useMemo(() => {
@@ -71,8 +73,27 @@ export default function AdminPostEditor({
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
+  async function copyBody() {
+    const body = form.body.trim()
+    if (!body) {
+      setCopyStatus('Nothing to copy.')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(body)
+      setCopyStatus('Copied.')
+      window.setTimeout(() => setCopyStatus(''), 2000)
+    } catch {
+      setCopyStatus('Copy failed.')
+    }
+  }
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
+    if (!form.body.trim()) {
+      setError('Body is required')
+      return
+    }
     setSaving(true)
     setError('')
     try {
@@ -115,8 +136,8 @@ export default function AdminPostEditor({
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
-      <div className="glass glass-card mb-6 flex items-center justify-between gap-3 px-5 py-4">
+    <div className="mx-auto w-full max-w-7xl px-2 py-6 sm:px-3 sm:py-8">
+      <div className="glass glass-card mb-4 flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
         <h1 className="text-3xl font-bold tracking-tight text-[var(--ink)]">
           {isEdit ? 'Edit post' : 'New post'}
         </h1>
@@ -128,7 +149,8 @@ export default function AdminPostEditor({
         </Link>
       </div>
 
-      <form onSubmit={onSubmit} className="glass glass-card space-y-4 px-5 py-6 sm:px-6">
+      <form onSubmit={onSubmit} className="glass glass-card">
+        <div className="space-y-4 px-3 py-5 sm:px-4">
         <label className={labelClass}>
           Title
           <input
@@ -237,27 +259,49 @@ export default function AdminPostEditor({
           />
           Draft (unpublished)
         </label>
+        </div>
 
-        <label className={labelClass}>
-          Body (MDX)
-          <textarea
+        <div className="border-t border-[var(--glass-stroke)] px-1 pb-2 pt-3 sm:px-2">
+          <div className="mb-2 px-2 sm:px-1">
+            <span className={labelClass}>Body (MDX)</span>
+            <p className="mt-1 text-xs text-[var(--ink-soft)]">
+              Markdown editor with preview. Select text to open AI assist (polish, shorten, expand,
+              continue, custom).
+            </p>
+          </div>
+          <AdminMarkdownEditor
             value={form.body}
-            onChange={(e) => update('body', e.target.value)}
-            rows={24}
-            className={`${fieldClass} font-mono text-sm`}
-            required
+            onChange={(body) => update('body', body)}
+            title={form.title}
+            locale={form.locale}
           />
-        </label>
+        </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="space-y-3 border-t border-[var(--glass-stroke)] px-3 py-4 sm:px-4">
+          {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="via-primary-500 rounded-full bg-gradient-to-b from-[#3d9dff] to-[#0a76e6] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(10,132,255,0.35)] transition hover:-translate-y-0.5 disabled:opacity-60"
-        >
-          {saving ? 'Saving…' : isEdit ? 'Update' : 'Create'}
-        </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="via-primary-500 rounded-full bg-gradient-to-b from-[#3d9dff] to-[#0a76e6] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(10,132,255,0.35)] transition hover:-translate-y-0.5 disabled:opacity-60"
+            >
+              {saving ? 'Saving…' : isEdit ? 'Update' : 'Create'}
+            </button>
+            <button
+              type="button"
+              onClick={copyBody}
+              className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)]"
+            >
+              Copy
+            </button>
+            {copyStatus && (
+              <span className="text-xs text-[var(--ink-soft)]" role="status">
+                {copyStatus}
+              </span>
+            )}
+          </div>
+        </div>
       </form>
     </div>
   )

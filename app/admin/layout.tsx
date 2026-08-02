@@ -7,8 +7,8 @@ export const metadata = {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen text-[var(--ink)]">
-      <div className="sticky top-0 z-50 px-4 pt-3 sm:px-6">
-        <div className="glass glass-pill mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2.5">
+      <div className="sticky top-0 z-50 px-2 pt-3 sm:px-3">
+        <div className="glass glass-pill mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5">
           <Link
             href="/admin"
             className="flex items-center gap-2 text-sm font-semibold tracking-tight text-[var(--ink)]"

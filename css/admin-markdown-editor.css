@@ -1,0 +1,331 @@
+/* Promote glass ancestors so the editor escapes sticky admin nav (z-50).
+   backdrop-filter on .glass creates a stacking context that would otherwise
+   trap .w-md-editor-fullscreen below the header. */
+.glass:has(.admin-md-compose),
+.glass-card:has(.admin-md-compose) {
+  position: relative;
+  z-index: 60;
+}
+
+.glass-card:has(.admin-md-compose):hover {
+  transform: none;
+}
+
+.admin-md-compose {
+  position: relative;
+  z-index: 60;
+  margin: 0;
+  width: 100%;
+}
+
+.admin-md-compose .w-md-editor {
+  position: relative;
+  z-index: 1;
+  border: 1px solid var(--glass-stroke);
+  border-radius: 1rem;
+  background: var(--control-fill);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+/*
+ * Fullscreen: backdrop-filter / transform on .glass make position:fixed
+ * relative to the card (and overflow clips it). Strip those so the editor
+ * can cover the real viewport.
+ */
+.glass:has(.w-md-editor-fullscreen),
+.glass-card:has(.w-md-editor-fullscreen),
+.admin-md-compose:has(.w-md-editor-fullscreen) {
+  position: static !important;
+  z-index: auto !important;
+  transform: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  contain: none !important;
+  overflow: visible !important;
+}
+
+.admin-md-compose .w-md-editor-fullscreen,
+.w-md-editor.w-md-editor-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  z-index: 200 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border: 0 !important;
+  background: var(--control-fill, #fff) !important;
+}
+
+/* Backup path when html.admin-md-fs is toggled from the editor */
+html.admin-md-fs,
+html.admin-md-fs body {
+  overflow: hidden !important;
+}
+
+html.admin-md-fs .glass:has(.admin-md-compose),
+html.admin-md-fs .glass-card:has(.admin-md-compose),
+html.admin-md-fs .admin-md-compose {
+  position: static !important;
+  z-index: auto !important;
+  transform: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: visible !important;
+}
+
+.admin-md-compose .w-md-editor-toolbar {
+  border-bottom: 1px solid var(--glass-stroke);
+  background: color-mix(in srgb, var(--control-fill) 88%, white);
+  border-radius: 1rem 1rem 0 0;
+  padding: 0.35rem 0.45rem;
+}
+
+.admin-md-compose .w-md-editor-toolbar li > button {
+  color: var(--ink-soft) !important;
+  height: 28px;
+}
+
+.admin-md-compose .w-md-editor-toolbar li > button:hover,
+.admin-md-compose .w-md-editor-toolbar li.active > button {
+  background: color-mix(in srgb, var(--color-primary-500, #0a84ff) 14%, transparent) !important;
+  color: var(--color-primary-600, #0a76e6) !important;
+}
+
+.admin-md-compose .w-md-editor-toolbar-divider {
+  background-color: var(--glass-stroke) !important;
+}
+
+.admin-md-compose .w-md-editor-content {
+  background: var(--control-fill);
+}
+
+/*
+ * Keep highlight <pre><code> and the transparent <textarea> metrics identical.
+ * Mismatched font/line-height (common with custom overrides + @tailwindcss/forms)
+ * causes the caret to drift when typing Latin text.
+ */
+.admin-md-compose .w-md-editor-text {
+  --md-editor-font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--md-editor-font-family) !important;
+  font-size: 14px !important;
+  line-height: 21px !important;
+  letter-spacing: normal !important;
+  font-variant-ligatures: none !important;
+  color: var(--ink) !important;
+  min-height: 36rem;
+}
+
+.admin-md-compose .w-md-editor-text-pre,
+.admin-md-compose .w-md-editor-text-pre > code,
+.admin-md-compose .w-md-editor-text-input {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  letter-spacing: inherit !important;
+  font-variant-ligatures: inherit !important;
+  font-weight: inherit !important;
+  tab-size: 2 !important;
+  word-break: break-word !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: break-word !important;
+}
+
+.admin-md-compose .w-md-editor-text-pre > code {
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: inherit !important;
+}
+
+.admin-md-compose .w-md-editor-text-input {
+  /* Neutralize @tailwindcss/forms textarea chrome that desyncs from <pre> */
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  min-height: 0 !important;
+  caret-color: var(--ink);
+}
+
+/* Syntax tokens must not change metrics, or Latin caret drifts horizontally. */
+.admin-md-compose .w-md-editor-text-pre .token {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  font-weight: inherit !important;
+  font-style: inherit !important;
+  letter-spacing: inherit !important;
+}
+
+.admin-md-compose .w-md-editor-preview {
+  background: var(--control-fill);
+  color: var(--ink);
+  box-shadow: inset 1px 0 0 var(--glass-stroke);
+}
+
+.admin-md-compose.admin-md-has-suggestion .w-md-editor {
+  border-color: color-mix(in srgb, var(--color-primary-500, #0a84ff) 45%, var(--glass-stroke));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500, #0a84ff) 14%, transparent);
+}
+
+.admin-md-loading {
+  min-height: 36rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--glass-stroke);
+  border-radius: 1rem;
+  background: var(--control-fill);
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
+
+.admin-md-meta {
+  margin: 0.35rem 0 0.5rem;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.admin-md-status {
+  min-height: 1.25rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.admin-md-status.ok {
+  color: #0f9f76;
+}
+
+.admin-md-status.error {
+  color: #dc4a3d;
+}
+
+.admin-md-bubble {
+  position: fixed;
+  z-index: 2147483000;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--color-primary-500, #0a84ff) 35%, var(--glass-stroke));
+  border-radius: 16px;
+  background: color-mix(in srgb, white 92%, transparent);
+  box-shadow: 0 12px 36px rgba(18, 32, 28, 0.12);
+  backdrop-filter: blur(10px);
+  max-width: min(420px, calc(100vw - 16px));
+  min-width: min(320px, calc(100vw - 16px));
+  pointer-events: auto;
+}
+
+.admin-md-bubble.hidden {
+  display: none;
+}
+
+.admin-md-bubble-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+}
+
+.admin-md-bubble-btn {
+  border: 1px solid var(--glass-stroke);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: white;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-md-bubble-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--color-primary-500, #0a84ff) 40%, var(--glass-stroke));
+  color: var(--color-primary-600, #0a76e6);
+}
+
+.admin-md-bubble-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-md-bubble-instruct {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.admin-md-bubble-instruct input {
+  width: 100%;
+  margin: 0;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--glass-stroke);
+  border-radius: 999px;
+  background: var(--control-fill);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.admin-md-bubble-instruct input:focus {
+  border-color: color-mix(in srgb, var(--color-primary-500, #0a84ff) 55%, var(--glass-stroke));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500, #0a84ff) 18%, transparent);
+}
+
+.admin-md-bubble-run {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  background: linear-gradient(to bottom, #3d9dff, #0a76e6);
+  color: white;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-md-bubble-run:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-md-review {
+  position: fixed;
+  z-index: 2147483001;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--glass-stroke);
+  border-radius: 999px;
+  background: color-mix(in srgb, white 94%, transparent);
+  box-shadow: 0 12px 36px rgba(18, 32, 28, 0.12);
+  backdrop-filter: blur(10px);
+  max-width: calc(100vw - 16px);
+}
+
+.admin-md-review.hidden {
+  display: none;
+}
+
+.admin-md-review-label {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
