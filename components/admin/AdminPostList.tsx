@@ -14,7 +14,9 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
   }
 
   async function translateAll() {
-    if (!confirm('Auto-translate all posts missing a pair via OpenRouter? This may take a while.')) {
+    if (
+      !confirm('Auto-translate all posts missing a pair via OpenRouter? This may take a while.')
+    ) {
       return
     }
     const res = await fetch('/api/admin/translate-all', { method: 'POST' })
@@ -23,9 +25,7 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
       alert(data.error || 'Translate failed')
       return
     }
-    alert(
-      `Done. translated=${data.translated}, skipped=${data.skipped}, failed=${data.failed}`
-    )
+    alert(`Done. translated=${data.translated}, skipped=${data.skipped}, failed=${data.failed}`)
     router.refresh()
   }
 

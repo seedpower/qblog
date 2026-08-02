@@ -49,7 +49,9 @@ function docToListItem(doc: WithId<PostDocument>): PostListItem {
     coverImage: coverFrom(doc.images || [], path),
     locale: normalizeLocale(doc.locale),
     translationKey: doc.translationKey,
-    sourceLocale: doc.sourceLocale ? normalizeLocale(doc.sourceLocale) : normalizeLocale(doc.locale),
+    sourceLocale: doc.sourceLocale
+      ? normalizeLocale(doc.sourceLocale)
+      : normalizeLocale(doc.locale),
     readingTime: readingTime(doc.body || ''),
   }
 }
