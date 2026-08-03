@@ -58,7 +58,8 @@ export default function AdminPostEditor({
   const router = useRouter()
   const [form, setForm] = useState<FormState>(() => initialState(initialPost))
   const [error, setError] = useState('')
-  const [saving, setSaving] = useState<'publish' | 'draft' | null>(null)
+  const [saving, setSaving] = useState<'publish' | 'draft' | 'save' | null>(null)
+  const [saveStatus, setSaveStatus] = useState('')
   const [copyStatus, setCopyStatus] = useState('')
   const [editorMeta, setEditorMeta] = useState('0 chars · Markdown')
   const [editorStatus, setEditorStatus] = useState<{ message: string; kind: 'ok' | 'error' | '' }>({
@@ -68,8 +69,9 @@ export default function AdminPostEditor({
   const [coverBusy, setCoverBusy] = useState(false)
   const [coverPreviewUrl, setCoverPreviewUrl] = useState('')
   const [editorColumnHeight, setEditorColumnHeight] = useState<number | undefined>()
+  const [activePostId, setActivePostId] = useState(postId)
   const asideRef = useRef<HTMLElement>(null)
-  const isEdit = Boolean(postId)
+  const isEdit = Boolean(activePostId)
 
   useEffect(() => {
     const aside = asideRef.current
@@ -179,17 +181,21 @@ export default function AdminPostEditor({
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null
-    const asDraft = submitter?.value !== 'publish'
+    const intent = (submitter?.value || 'save') as 'publish' | 'draft' | 'save'
+    const stayOnPage = intent === 'save'
+    const asDraft = intent === 'publish' ? false : intent === 'draft' ? true : form.draft
     if (!form.body.trim()) {
       setError('Body is required')
       return
     }
-    setSaving(asDraft ? 'draft' : 'publish')
+    setSaving(intent)
     setError('')
+    setSaveStatus('')
     try {
+      const slug = form.slug || titleHint
       const payload = {
         title: form.title,
-        slug: form.slug || titleHint,
+        slug,
         date: new Date(form.date).toISOString(),
         tags: form.tags,
         draft: asDraft,
@@ -202,16 +208,39 @@ export default function AdminPostEditor({
         locale: form.locale,
         sourceLocale: form.locale,
       }
-      const res = await fetch(isEdit ? `/api/admin/posts/${postId}/` : '/api/admin/posts/', {
-        method: isEdit ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      const res = await fetch(
+        isEdit ? `/api/admin/posts/${activePostId}/` : '/api/admin/posts/',
+        {
+          method: isEdit ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      )
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'Save failed')
         return
       }
+
+      const savedId = data.post?._id as string | undefined
+      setForm((prev) => ({
+        ...prev,
+        draft: asDraft,
+        slug: data.post?.slug || slug,
+      }))
+
+      if (stayOnPage) {
+        if (savedId && savedId !== activePostId) {
+          setActivePostId(savedId)
+          // Keep the same editor instance so scroll/caret/AI UI are preserved.
+          window.history.replaceState(null, '', `/admin/posts/${savedId}`)
+        }
+        setSaveStatus(asDraft ? 'Saved as draft.' : 'Saved.')
+        window.setTimeout(() => setSaveStatus(''), 2500)
+        router.refresh()
+        return
+      }
+
       router.replace('/admin')
       router.refresh()
     } catch {
@@ -407,12 +436,26 @@ export default function AdminPostEditor({
                 {editorStatus.message}
               </p>
             ) : null}
+            {saveStatus && (
+              <span className="text-xs font-medium text-[#0f9f76]" role="status">
+                {saveStatus}
+              </span>
+            )}
             {copyStatus && (
               <span className="text-xs text-[var(--ink-soft)]" role="status">
                 {copyStatus}
               </span>
             )}
           </div>
+          <button
+            type="submit"
+            name="intent"
+            value="save"
+            disabled={saving !== null}
+            className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)] disabled:opacity-60"
+          >
+            {saving === 'save' ? 'Saving…' : 'Save'}
+          </button>
           <button
             type="submit"
             name="intent"

@@ -171,6 +171,47 @@ html.dark .admin-md-compose .w-md-editor-toolbar-child .w-md-editor-toolbar li.a
   box-shadow: inset 1px 0 0 var(--glass-stroke);
 }
 
+/*
+ * Tailwind preflight sets ul/ol { list-style: none }.
+ * @uiw markdown preview relies on browser defaults for discs — restore them.
+ */
+.admin-md-compose .w-md-editor-preview .wmde-markdown ul {
+  list-style-type: disc;
+  list-style-position: outside;
+  padding-left: 1.75em;
+}
+
+.admin-md-compose .w-md-editor-preview .wmde-markdown ol {
+  list-style-type: decimal;
+  list-style-position: outside;
+  padding-left: 1.75em;
+}
+
+.admin-md-compose .w-md-editor-preview .wmde-markdown ul ul {
+  list-style-type: circle;
+}
+
+.admin-md-compose .w-md-editor-preview .wmde-markdown ul ul ul {
+  list-style-type: square;
+}
+
+.admin-md-compose .w-md-editor-preview .wmde-markdown ol ol {
+  list-style-type: lower-roman;
+}
+
+.admin-md-compose .w-md-editor-preview .wmde-markdown ol ol ol {
+  list-style-type: lower-alpha;
+}
+
+.admin-md-compose .w-md-editor-preview .wmde-markdown li {
+  display: list-item;
+  margin: 0.2em 0;
+}
+
+.admin-md-compose .w-md-editor-preview .wmde-markdown li::marker {
+  color: var(--ink-soft);
+}
+
 .admin-md-compose .w-md-editor-preview .admin-md-mermaid .mermaid {
   margin: 0;
   background: color-mix(in srgb, var(--control-fill) 55%, transparent);
@@ -366,6 +407,20 @@ html.admin-md-fs .admin-md-compose {
 
 .admin-md-bubble.hidden {
   display: none;
+}
+
+.admin-md-sel-ghost {
+  position: fixed;
+  inset: 0;
+  z-index: 2147482990;
+  pointer-events: none;
+}
+
+.admin-md-sel-ghost-rect {
+  position: fixed;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--color-primary-500, #0a84ff) 28%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary-500, #0a84ff) 35%, transparent);
 }
 
 .admin-md-bubble-actions {

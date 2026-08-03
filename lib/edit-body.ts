@@ -18,23 +18,31 @@ const ACTION_PROMPTS: Record<Exclude<BodyEditAction, 'custom'>, string> = {
   continue: '在原文末尾自然续写 1-3 段，语气与上文一致，不要重复已有内容。',
 }
 
+const STRUCTURE_RULES = `Markdown structure rules (critical):
+- Preserve paragraph breaks: keep blank lines (\\n\\n) between paragraphs.
+- Preserve hard line breaks inside lists, quotes, and code/mermaid fences.
+- Keep each list item on its own line (do not join "- a\\n- b" into one line).
+- Do not collapse the excerpt into a single paragraph unless the task explicitly asks to merge.
+- Keep surrounding newlines that separate blocks from neighbors.`
+
 function stripCodeFences(text: string) {
   return text.replace(/^```(?:markdown|mdx|md)?\s*\n?/i, '').replace(/\n?```\s*$/i, '')
 }
 
+/** Extract content without stripping internal / boundary newlines. */
 function parseContent(raw: string): string {
   const trimmed = raw.trim()
   try {
-    const parsed = JSON.parse(trimmed) as { content?: string }
-    if (parsed.content) return String(parsed.content).trim()
+    const parsed = JSON.parse(trimmed) as { content?: unknown }
+    if (typeof parsed.content === 'string') return parsed.content
   } catch {
     // fall through
   }
   const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)
   if (fenceMatch) {
     try {
-      const parsed = JSON.parse(fenceMatch[1]) as { content?: string }
-      if (parsed.content) return String(parsed.content).trim()
+      const parsed = JSON.parse(fenceMatch[1]) as { content?: unknown }
+      if (typeof parsed.content === 'string') return parsed.content
     } catch {
       // fall through
     }
@@ -42,6 +50,19 @@ function parseContent(raw: string): string {
   const plain = stripCodeFences(trimmed)
   if (plain && !plain.startsWith('{')) return plain
   return ''
+}
+
+/**
+ * Keep the original selection's leading/trailing newlines so replacing a block
+ * doesn't glue paragraphs together after the model trims its output.
+ */
+export function preserveBoundaryNewlines(original: string, edited: string): string {
+  const lead = original.match(/^\n*/)?.[0] ?? ''
+  const trail = original.match(/\n*$/)?.[0] ?? ''
+  let core = edited
+  if (lead) core = core.replace(/^\n+/, '')
+  if (trail) core = core.replace(/\n+$/, '')
+  return `${lead}${core}${trail}`
 }
 
 export async function editPostBody(opts: {
@@ -52,8 +73,9 @@ export async function editPostBody(opts: {
   selection?: string
   locale?: 'zh-CN' | 'en'
 }): Promise<{ content: string; mode: 'full' | 'selection' | 'append' }> {
-  const content = opts.content.trim()
-  if (!content && opts.action !== 'custom') {
+  // Do not trim the whole body — trailing newlines are part of document structure.
+  const content = opts.content ?? ''
+  if (!content.trim() && opts.action !== 'custom') {
     throw new Error('content is required')
   }
   if (content.length > 12000) {
@@ -61,7 +83,8 @@ export async function editPostBody(opts: {
   }
 
   const language = opts.locale === 'en' ? 'English' : 'Simplified Chinese'
-  const selection = (opts.selection || '').trim()
+  // Keep selection exact (including whitespace / newlines). Trimming caused lost breaks.
+  const selection = opts.selection ?? ''
   const custom = (opts.instruction || '').trim()
   const action = opts.action || 'polish'
 
@@ -77,7 +100,7 @@ export async function editPostBody(opts: {
   const mode: 'full' | 'selection' | 'append' =
     action === 'continue'
       ? 'append'
-      : selection && content.includes(selection)
+      : selection.length > 0 && content.includes(selection)
         ? 'selection'
         : 'full'
 
@@ -88,26 +111,32 @@ Edit ONLY the selected excerpt per the task.
 Return ONLY JSON: {"content":"..."} as Markdown/MDX (headings, lists, bold/italic as needed).
 Keep the same language as the excerpt (${language}).
 Do NOT translate code blocks, URLs, file paths, or component names.
-Do not wrap the answer in markdown code fences.`
+Do not wrap the answer in markdown code fences.
+${STRUCTURE_RULES}
+In JSON, encode newlines as \\n so blank lines survive parsing.`
       : mode === 'append'
         ? `You are an editing assistant for a Markdown/MDX blog post body.
 Write a natural continuation in Markdown/MDX.
 Return ONLY JSON: {"content":"..."} where content is ONLY the new continuation (not the original).
 Keep the same language (${language}).
-Do not wrap the answer in markdown code fences.`
+Do not wrap the answer in markdown code fences.
+${STRUCTURE_RULES}
+In JSON, encode newlines as \\n so blank lines survive parsing.`
         : `You are an editing assistant for a Markdown/MDX blog post body.
 Revise the full draft per the task.
 Return ONLY JSON: {"content":"..."} as Markdown/MDX.
 Preserve useful structure (## headings, lists, quotes, links, mermaid/code fences) when present.
 Keep the same language (${language}) unless asked otherwise.
 Do NOT translate code blocks, URLs, file paths, or component names.
-Do not wrap the answer in markdown code fences.`
+Do not wrap the answer in markdown code fences.
+${STRUCTURE_RULES}
+In JSON, encode newlines as \\n so blank lines survive parsing.`
 
   const userParts = [
     `Task: ${task}`,
     opts.title ? `Title: ${opts.title.trim()}` : '',
     mode === 'selection'
-      ? `Selected excerpt to edit:\n"""\n${selection}\n"""\n\nFull document (context only, do not rewrite wholly):\n"""\n${content.slice(0, 6000)}\n"""`
+      ? `Selected excerpt to edit (preserve its line breaks):\n"""\n${selection}\n"""\n\nFull document (context only, do not rewrite wholly):\n"""\n${content.slice(0, 6000)}\n"""`
       : `Document:\n"""\n${content}\n"""`,
   ].filter(Boolean)
 
@@ -120,9 +149,13 @@ Do not wrap the answer in markdown code fences.`
     responseFormat: 'json_object',
   })
 
-  const next = parseContent(raw)
+  let next = parseContent(raw)
   if (!next) {
     throw new Error(`AI edit failed: ${raw.slice(0, 160)}`)
+  }
+
+  if (mode === 'selection') {
+    next = preserveBoundaryNewlines(selection, next)
   }
 
   return { content: next, mode }

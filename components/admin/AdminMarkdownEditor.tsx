@@ -30,6 +30,11 @@ type SelectionSnap = {
   end: number
 }
 
+/** True for any non-empty range, including whitespace / newlines only. */
+function hasSelectionSnap(sel: SelectionSnap | null | undefined): boolean {
+  return Boolean(sel && sel.end > sel.start)
+}
+
 type PendingEdit = {
   beforeValue: string
   start: number
@@ -125,6 +130,86 @@ function getTextareaCaretPoint(textarea: HTMLTextAreaElement, position: number) 
   return { top, left, height: lineHeight }
 }
 
+type CaretPoint = { top: number; left: number; height: number }
+
+/** Reuses one mirror node so multi-line selection measurement stays cheap. */
+function createCaretMeasurer(textarea: HTMLTextAreaElement) {
+  const style = window.getComputedStyle(textarea)
+  const mirror = document.createElement('div')
+  const marker = document.createElement('span')
+  marker.textContent = '\u200b'
+  const props = [
+    'boxSizing',
+    'width',
+    'borderTopWidth',
+    'borderRightWidth',
+    'borderBottomWidth',
+    'borderLeftWidth',
+    'paddingTop',
+    'paddingRight',
+    'paddingBottom',
+    'paddingLeft',
+    'fontStyle',
+    'fontVariant',
+    'fontWeight',
+    'fontStretch',
+    'fontSize',
+    'fontFamily',
+    'lineHeight',
+    'letterSpacing',
+    'textTransform',
+    'textAlign',
+    'textIndent',
+    'whiteSpace',
+    'wordBreak',
+    'overflowWrap',
+    'tabSize',
+  ] as const
+
+  mirror.setAttribute('aria-hidden', 'true')
+  Object.assign(mirror.style, {
+    position: 'absolute',
+    visibility: 'hidden',
+    whiteSpace: 'pre-wrap',
+    wordWrap: 'break-word',
+    overflow: 'hidden',
+    top: '0',
+    left: '-99999px',
+    height: 'auto',
+  })
+  for (const prop of props) {
+    mirror.style[prop] = style[prop]
+  }
+  mirror.style.width = `${textarea.clientWidth}px`
+  document.body.appendChild(mirror)
+
+  const value = textarea.value
+  const taRect = textarea.getBoundingClientRect()
+  const borderTop = Number.parseFloat(style.borderTopWidth || '0')
+  const borderLeft = Number.parseFloat(style.borderLeftWidth || '0')
+  const fallbackLineHeight =
+    Number.parseFloat(style.lineHeight) || Number.parseFloat(style.fontSize) || 21
+
+  const measure = (position: number): CaretPoint => {
+    const clamped = Math.max(0, Math.min(position, value.length))
+    mirror.textContent = value.slice(0, clamped)
+    mirror.appendChild(marker)
+    const markerRect = marker.getBoundingClientRect()
+    const mirrorRect = mirror.getBoundingClientRect()
+    return {
+      top: taRect.top + (markerRect.top - mirrorRect.top) - textarea.scrollTop + borderTop,
+      left: taRect.left + (markerRect.left - mirrorRect.left) - textarea.scrollLeft + borderLeft,
+      height: markerRect.height || fallbackLineHeight,
+    }
+  }
+
+  const dispose = () => {
+    mirror.remove()
+  }
+
+  return { measure, dispose, taRect }
+}
+
 function getSelectionBounds(textarea: HTMLTextAreaElement, start: number, end: number) {
   const from = getTextareaCaretPoint(textarea, start)
   const to = getTextareaCaretPoint(textarea, Math.max(start, end))
@@ -141,6 +226,92 @@ function getSelectionBounds(textarea: HTMLTextAreaElement, start: number, end: n
     right: Math.min(Math.max(right, left + 8), taRect.right),
     midX: (Math.max(left, taRect.left) + Math.min(Math.max(right, left + 8), taRect.right)) / 2,
   }
+}
+
+/**
+ * Build highlight rects per *visual* line for range [start, end) (exclusive end).
+ *
+ * Soft-wrap note: the caret *before* the first glyph on a wrapped line still sits at
+ * the end of the previous visual line. Belonging line / left edge must come from the
+ * caret *after* that glyph (or contentLeft when it wraps).
+ */
+function getSelectionHighlightRects(
+  textarea: HTMLTextAreaElement,
+  start: number,
+  end: number
+): Array<{ top: number; left: number; width: number; height: number }> {
+  if (end <= start) return []
+
+  const style = window.getComputedStyle(textarea)
+  const padL = Number.parseFloat(style.paddingLeft) || 0
+  const padR = Number.parseFloat(style.paddingRight) || 0
+  const { measure, dispose, taRect } = createCaretMeasurer(textarea)
+  const contentLeft = taRect.left + padL
+  const contentRight = taRect.right - padR
+  const value = textarea.value
+
+  type LineRun = { top: number; left: number; right: number; height: number }
+  const runs: LineRun[] = []
+
+  try {
+    const sameLine = (a: number, b: number) => Math.abs(a - b) < 1.5
+
+    const pushChar = (top: number, left: number, right: number, height: number) => {
+      const clampedLeft = Math.max(Math.min(left, right), taRect.left)
+      const clampedRight = Math.min(Math.max(left, right), taRect.right)
+      if (clampedRight - clampedLeft < 1) return
+      const last = runs[runs.length - 1]
+      if (last && sameLine(last.top, top) && Math.abs(last.right - clampedLeft) < 1.5) {
+        last.right = Math.max(last.right, clampedRight)
+        last.height = Math.max(last.height, height)
+        return
+      }
+      runs.push({ top, left: clampedLeft, right: clampedRight, height })
+    }
+
+    for (let i = start; i < end; i++) {
+      if (value[i] === '\n') {
+        // Empty / newline-only selections still need a visible pin mark.
+        const before = measure(i)
+        const after = measure(i + 1)
+        const top = sameLine(before.top, after.top) ? before.top : after.top
+        const height = before.height || after.height
+        const left = sameLine(before.top, after.top) ? before.left : contentLeft
+        pushChar(top, left, Math.min(left + 8, contentRight), height)
+        continue
+      }
+
+      const before = measure(i)
+      const after = measure(i + 1)
+
+      if (sameLine(before.top, after.top)) {
+        // After a hard newline the before-caret can sit a few px inset; pin to contentLeft.
+        const atHardLineStart = i === 0 || value[i - 1] === '\n'
+        const left = atHardLineStart ? contentLeft : before.left
+        pushChar(before.top, left, Math.max(after.left, left + 1), before.height)
+        continue
+      }
+
+      // Soft wrap: glyph `i` is painted on the *next* visual line at contentLeft.
+      pushChar(after.top, contentLeft, Math.max(after.left, contentLeft + 1), after.height || before.height)
+    }
+  } finally {
+    dispose()
+  }
+
+  return runs
+    .map((run) => {
+      const top = Math.max(run.top, taRect.top)
+      const bottom = Math.min(run.top + run.height, taRect.bottom)
+      if (bottom <= top + 1) return null
+      return {
+        top,
+        left: run.left,
+        width: Math.max(4, Math.min(run.right, contentRight + 0.5) - run.left),
+        height: bottom - top,
+      }
+    })
+    .filter((rect): rect is { top: number; left: number; width: number; height: number } => !!rect)
 }
 
 function safeUploadFilename(file: File) {
@@ -211,6 +382,8 @@ export default function AdminMarkdownEditor({
   const onStatusChangeRef = useRef(onStatusChange)
   const pendingRef = useRef<PendingEdit | null>(null)
   const bubbleSelectionRef = useRef<SelectionSnap | null>(null)
+  /** Frozen copy used while the instruction field is focused — never overwritten by onSelect. */
+  const pinnedSelectionRef = useRef<SelectionSnap | null>(null)
   const bubbleTimerRef = useRef(0)
   const pointerDownRef = useRef(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -226,6 +399,10 @@ export default function AdminMarkdownEditor({
   const [instruction, setInstruction] = useState('')
   const [busy, setBusy] = useState(false)
   const [highlightRange, setHighlightRange] = useState<{ start: number; end: number } | null>(null)
+  const [selectionGhostRects, setSelectionGhostRects] = useState<
+    Array<{ top: number; left: number; width: number; height: number }>
+  >([])
+  const selectionGhostPinnedRef = useRef(false)
   const [mediaBusy, setMediaBusy] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerItems, setPickerItems] = useState<
@@ -309,7 +486,44 @@ export default function AdminMarkdownEditor({
 
   const hideBubble = useCallback(() => {
     setBubbleVisible(false)
+    selectionGhostPinnedRef.current = false
+    pinnedSelectionRef.current = null
+    setSelectionGhostRects([])
   }, [])
+
+  const resolvePinnedSelection = useCallback((): SelectionSnap | null => {
+    const pinned = pinnedSelectionRef.current
+    if (hasSelectionSnap(pinned)) return pinned
+    const bubble = bubbleSelectionRef.current
+    if (hasSelectionSnap(bubble)) return bubble
+    return null
+  }, [])
+
+  const syncSelectionGhost = useCallback(() => {
+    const snap = resolvePinnedSelection()
+    const ta = getTextarea(wrapRef.current)
+    if (!selectionGhostPinnedRef.current || !hasSelectionSnap(snap) || !ta) {
+      setSelectionGhostRects([])
+      return
+    }
+    setSelectionGhostRects(getSelectionHighlightRects(ta, snap!.start, snap!.end))
+  }, [resolvePinnedSelection])
+
+  const pinSelectionGhost = useCallback(() => {
+    const existing = hasSelectionSnap(pinnedSelectionRef.current)
+      ? pinnedSelectionRef.current
+      : hasSelectionSnap(bubbleSelectionRef.current)
+        ? bubbleSelectionRef.current
+        : null
+    const live = getSelection()
+    const snap = hasSelectionSnap(existing) ? existing : hasSelectionSnap(live) ? live : null
+    if (!hasSelectionSnap(snap)) return
+    // Freeze the exact user range before focus steals the native selection.
+    pinnedSelectionRef.current = { ...snap! }
+    bubbleSelectionRef.current = { ...snap! }
+    selectionGhostPinnedRef.current = true
+    syncSelectionGhost()
+  }, [getSelection, syncSelectionGhost])
 
   const hideReview = useCallback(() => {
     setReviewVisible(false)
@@ -376,7 +590,7 @@ export default function AdminMarkdownEditor({
       from?: number,
       to?: number
     ) => {
-      const next = String(content ?? '')
+      let next = String(content ?? '')
       pendingRef.current = null
 
       let full: string
@@ -384,12 +598,22 @@ export default function AdminMarkdownEditor({
       let end: number
 
       if (mode === 'append') {
-        const base = beforeValue.replace(/\s+$/, '')
-        const sep = base ? '\n\n' : ''
-        full = base + sep + next.trim()
+        const base = beforeValue.replace(/[ \t]+$/u, '')
+        const sep = base ? (base.endsWith('\n') ? '\n' : '\n\n') : ''
+        // Keep internal newlines; only strip spaces/tabs at the very edges.
+        const chunk = next.replace(/^[ \t]+/u, '').replace(/[ \t]+$/u, '')
+        full = base + sep + chunk
         start = base.length + sep.length
         end = full.length
       } else if (mode === 'selection' && typeof from === 'number' && typeof to === 'number') {
+        const original = beforeValue.slice(from, to)
+        // Re-attach original leading/trailing newlines if the model trimmed them.
+        const lead = original.match(/^\n*/)?.[0] ?? ''
+        const trail = original.match(/\n*$/)?.[0] ?? ''
+        let core = next
+        if (lead) core = core.replace(/^\n+/, '')
+        if (trail) core = core.replace(/\n+$/, '')
+        next = `${lead}${core}${trail}`
         full = beforeValue.slice(0, from) + next + beforeValue.slice(to)
         start = from
         end = from + next.length
@@ -421,8 +645,10 @@ export default function AdminMarkdownEditor({
 
   const positionBubble = useCallback(
     (_anchor?: { x: number; y: number } | null) => {
-      const sel = getSelection()
-      if (!sel.text.trim()) {
+      const live = getSelection()
+      const pinned = resolvePinnedSelection()
+      const sel = hasSelectionSnap(live) ? live : hasSelectionSnap(pinned) ? pinned : null
+      if (!sel) {
         hideBubble()
         return
       }
@@ -434,12 +660,15 @@ export default function AdminMarkdownEditor({
       }
 
       const place = () => {
-        const live = getSelection()
-        if (!live.text.trim()) {
+        const currentLive = getSelection()
+        const current = hasSelectionSnap(currentLive)
+          ? currentLive
+          : resolvePinnedSelection()
+        if (!hasSelectionSnap(current)) {
           hideBubble()
           return
         }
-        const bounds = getSelectionBounds(ta, live.start, live.end)
+        const bounds = getSelectionBounds(ta, current!.start, current!.end)
         const bubbleW = Math.max(bubbleRef.current?.offsetWidth || 0, 320)
         const bubbleH = Math.max(bubbleRef.current?.offsetHeight || 0, 72)
         const pad = 8
@@ -479,15 +708,19 @@ export default function AdminMarkdownEditor({
       // Remeasure after paint so real bubble size is used (avoids covering selection).
       requestAnimationFrame(place)
     },
-    [getSelection, hideBubble]
+    [getSelection, hideBubble, resolvePinnedSelection]
   )
 
   const scheduleBubble = useCallback(() => {
     if (pointerDownRef.current) return
+    // Instruction field has focus / ghost pin — keep the original frozen range.
+    if (selectionGhostPinnedRef.current || pinnedSelectionRef.current) return
+    if (bubbleRef.current?.contains(document.activeElement)) return
     window.clearTimeout(bubbleTimerRef.current)
     bubbleTimerRef.current = window.setTimeout(() => {
+      if (selectionGhostPinnedRef.current || pinnedSelectionRef.current) return
       const sel = getSelection()
-      if (!sel.text.trim()) {
+      if (!hasSelectionSnap(sel)) {
         hideBubble()
         return
       }
@@ -511,13 +744,9 @@ export default function AdminMarkdownEditor({
       }
 
       const live = getSelection()
-      const sel =
-        bubbleSelectionRef.current?.text?.trim()
-          ? bubbleSelectionRef.current
-          : live.text?.trim()
-            ? live
-            : null
-      const useSelection = action !== 'continue' && !!sel?.text?.trim()
+      const frozen = resolvePinnedSelection()
+      const sel = hasSelectionSnap(frozen) ? frozen : hasSelectionSnap(live) ? live : null
+      const useSelection = action !== 'continue' && hasSelectionSnap(sel)
       const selectionSnap = useSelection && sel ? sel : null
 
       setBusy(true)
@@ -549,6 +778,7 @@ export default function AdminMarkdownEditor({
         )
         setInstruction('')
         bubbleSelectionRef.current = null
+        pinnedSelectionRef.current = null
         setEditorStatus('AI edit applied. Accept or discard.', 'ok')
       } catch (err) {
         setEditorStatus(err instanceof Error ? err.message : 'AI edit failed', 'error')
@@ -562,6 +792,7 @@ export default function AdminMarkdownEditor({
       hideBubble,
       locale,
       positionReview,
+      resolvePinnedSelection,
       setEditorStatus,
       title,
       value,
@@ -641,8 +872,9 @@ export default function AdminMarkdownEditor({
       }
 
       requestAnimationFrame(() => {
+        if (selectionGhostPinnedRef.current || pinnedSelectionRef.current) return
         const sel = getSelection()
-        if (!sel.text.trim()) {
+        if (!hasSelectionSnap(sel)) {
           bubbleSelectionRef.current = null
           hideBubble()
           return
@@ -654,7 +886,9 @@ export default function AdminMarkdownEditor({
 
     const onScroll = () => {
       if (pendingRef.current) positionReview()
-      if (getSelection().text.trim()) positionBubble()
+      if (hasSelectionSnap(getSelection())) positionBubble()
+      else if (hasSelectionSnap(resolvePinnedSelection()) && bubbleVisible) positionBubble()
+      if (selectionGhostPinnedRef.current) syncSelectionGhost()
     }
 
     const onKeyUp = () => {
@@ -680,7 +914,17 @@ export default function AdminMarkdownEditor({
       window.removeEventListener('resize', onScroll)
       window.removeEventListener('keyup', onKeyUp)
     }
-  }, [getSelection, hideBubble, positionBubble, positionReview, scheduleBubble, updateMeta])
+  }, [
+    bubbleVisible,
+    getSelection,
+    hideBubble,
+    positionBubble,
+    positionReview,
+    resolvePinnedSelection,
+    scheduleBubble,
+    syncSelectionGhost,
+    updateMeta,
+  ])
 
   const handleChange = useCallback(
     (next?: string) => {
@@ -699,14 +943,22 @@ export default function AdminMarkdownEditor({
 
   const keepSelection = useCallback((e: ReactMouseEvent) => {
     // Buttons: preventDefault keeps the textarea selection when clicking the bubble.
-    // Do NOT use this on text inputs — it blocks focus and typing.
     e.preventDefault()
   }, [])
 
-  const focusInstruction = useCallback((e: ReactMouseEvent<HTMLInputElement>) => {
-    // Allow default focus behavior; just stop the event from reaching the editor.
-    e.stopPropagation()
-  }, [])
+  const focusInstruction = useCallback(
+    (e: ReactMouseEvent<HTMLInputElement>) => {
+      // Keep native selection through mousedown, then focus the input and paint a ghost
+      // so the range stays visible while typing the custom instruction.
+      e.preventDefault()
+      e.stopPropagation()
+      pinSelectionGhost()
+      requestAnimationFrame(() => {
+        instructionRef.current?.focus({ preventScroll: true })
+      })
+    },
+    [pinSelectionGhost]
+  )
 
   const rememberCaret = useCallback(() => {
     const ta = getTextarea(wrapRef.current)
@@ -939,6 +1191,7 @@ export default function AdminMarkdownEditor({
               placeholder="Custom instruction…"
               disabled={busy}
               onMouseDown={focusInstruction}
+              onFocus={pinSelectionGhost}
               onKeyDown={(e) => {
                 e.stopPropagation()
                 if (e.key === 'Enter') {
@@ -1012,6 +1265,27 @@ export default function AdminMarkdownEditor({
       )
     : null
 
+  const selectionGhost =
+    mounted && selectionGhostRects.length
+      ? createPortal(
+          <div className="admin-md-sel-ghost" aria-hidden="true">
+            {selectionGhostRects.map((rect, index) => (
+              <div
+                key={`${rect.top}-${rect.left}-${index}`}
+                className="admin-md-sel-ghost-rect"
+                style={{
+                  top: rect.top,
+                  left: rect.left,
+                  width: rect.width,
+                  height: rect.height,
+                }}
+              />
+            ))}
+          </div>,
+          document.body
+        )
+      : null
+
   return (
     <div
       ref={wrapRef}
@@ -1078,6 +1352,7 @@ export default function AdminMarkdownEditor({
           onKeyUp: rememberCaret,
         }}
       />
+      {selectionGhost}
       {bubble}
       {review}
       {pickerOpen &&
