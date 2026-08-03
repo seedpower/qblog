@@ -104,6 +104,56 @@ Rules:
   return (wrapped?.[1] || trimmed).trim()
 }
 
+/**
+ * Incrementally update an existing translation when the source body changes.
+ * Prefer keeping prior wording for unchanged sections.
+ */
+async function patchTranslateBody(options: {
+  sourceLocale: PostLocale
+  target: PostLocale
+  previousSourceBody?: string
+  newSourceBody: string
+  existingTranslationBody: string
+}): Promise<string> {
+  const { sourceLocale, target, previousSourceBody, newSourceBody, existingTranslationBody } =
+    options
+
+  const content = await openRouterChat({
+    messages: [
+      {
+        role: 'system',
+        content: `You update an existing MDX blog translation from ${languageName(sourceLocale)} to ${languageName(target)}.
+
+Goal: apply source edits to the EXISTING translation with minimal disruption.
+Rules:
+- Keep the existing translation wording wherever the source meaning is unchanged.
+- Only rewrite or add sentences/sections that correspond to source changes.
+- Do NOT restyle, reorder, or "improve" unrelated paragraphs.
+- Preserve MDX/Markdown structure exactly (headings, lists, code fences, links, images, JSX, mermaid).
+- Do NOT translate code, URLs, file paths, component names, or fenced language tags.
+- Return ONLY the updated MDX body. No JSON. No markdown wrapper. No commentary.`,
+      },
+      {
+        role: 'user',
+        content: [
+          previousSourceBody?.trim()
+            ? `PREVIOUS SOURCE (${languageName(sourceLocale)}):\n"""\n${previousSourceBody}\n"""`
+            : '',
+          `NEW SOURCE (${languageName(sourceLocale)}):\n"""\n${newSourceBody}\n"""`,
+          `EXISTING TRANSLATION (${languageName(target)}):\n"""\n${existingTranslationBody}\n"""`,
+          'Update the existing translation to match the NEW SOURCE. Minimize changes.',
+        ]
+          .filter(Boolean)
+          .join('\n\n'),
+      },
+    ],
+  })
+
+  const trimmed = content.trim()
+  const wrapped = trimmed.match(/^```(?:mdx|markdown|md)?\s*([\s\S]*?)\s*```$/i)
+  return (wrapped?.[1] || trimmed).trim()
+}
+
 export async function translatePostFields(
   source: Pick<PostDetail, 'title' | 'summary' | 'body' | 'tags' | 'locale'>,
   target: PostLocale
@@ -166,7 +216,8 @@ export function metaSignature(
  * Skips when the post itself is an auto-translated sibling (locale !== sourceLocale).
  *
  * - Missing siblings: full translate
- * - Existing + force: full re-translate
+ * - Existing + force: full re-translate from scratch
+ * - Existing + refreshBody: incremental body patch (keep stable wording)
  * - Existing + refreshMeta: re-translate title/summary/tags only (keep body)
  *
  * Locale targets run concurrently (default 5) to speed up multi-language fan-out.
@@ -176,6 +227,9 @@ export async function ensurePostTranslations(
   options?: {
     force?: boolean
     refreshMeta?: boolean
+    refreshBody?: boolean
+    /** Prior source body — helps the model patch translations with minimal churn. */
+    previousBody?: string
     targets?: PostLocale[]
     concurrency?: number
   }
@@ -193,16 +247,18 @@ export async function ensurePostTranslations(
 
   const targets = (options?.targets || locales.filter((l) => l !== source.locale)) as PostLocale[]
   const concurrency = options?.concurrency ?? translateConcurrency()
+  const needsWork = Boolean(options?.force || options?.refreshMeta || options?.refreshBody)
 
   const settled = await mapPool(targets, concurrency, async (target) => {
     const existing = await getTranslationSibling(source, target, { includeDrafts: true })
 
-    if (existing && !options?.force && !options?.refreshMeta) {
+    if (existing && !needsWork) {
       return { ok: true as const, translation: existing }
     }
 
     try {
-      if (existing && options?.refreshMeta && !options?.force) {
+      // Meta-only update: keep translated body untouched.
+      if (existing && options?.refreshMeta && !options?.refreshBody && !options?.force) {
         const meta = await translateMeta(source, target)
         const sibling = await updateLocaleSiblingMeta(source, meta, target)
         if (sibling) return { ok: true as const, translation: sibling }
@@ -211,6 +267,39 @@ export async function ensurePostTranslations(
           locale: target,
           error: 'Failed to update translated metadata',
         }
+      }
+
+      // Incremental body update for an existing translation (optionally refresh meta too).
+      if (existing?._id && options?.refreshBody && !options?.force) {
+        const existingDetail = await getPostById(existing._id)
+        const existingBody = existingDetail?.body?.trim() || ''
+
+        if (!existingBody) {
+          const translated = await translatePostFields(source, target)
+          const sibling = await upsertLocaleSibling(source, translated, target)
+          return { ok: true as const, translation: sibling }
+        }
+
+        const [meta, body] = await Promise.all([
+          options.refreshMeta
+            ? translateMeta(source, target)
+            : Promise.resolve({
+                title: existing.title,
+                summary: existing.summary || '',
+                tags: existing.tags || [],
+              }),
+          patchTranslateBody({
+            sourceLocale: source.locale,
+            target,
+            previousSourceBody: options.previousBody,
+            newSourceBody: source.body,
+            existingTranslationBody: existingBody,
+          }),
+        ])
+
+        if (!body) throw new Error('Incremental translation returned empty body')
+        const sibling = await upsertLocaleSibling(source, { ...meta, body }, target)
+        return { ok: true as const, translation: sibling }
       }
 
       // Missing sibling, or force full re-translate.

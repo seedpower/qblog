@@ -92,11 +92,13 @@ export async function PUT(request: NextRequest, context: Ctx) {
 
     after(async () => {
       try {
-        // Re-translate existing siblings when source content changes.
-        // Meta-only edits refresh title/summary/tags without rewriting bodies.
+        // Existing locales: incremental body patch + optional meta refresh.
+        // Missing locales: still created with a full translation.
+        // Use Admin "Translate missing" with force=1 for a full rewrite.
         await ensurePostTranslations(id, {
-          force: bodyChanged,
-          refreshMeta: metaChanged && !bodyChanged,
+          refreshMeta: metaChanged,
+          refreshBody: bodyChanged,
+          previousBody: previous?.body,
         })
       } catch (error) {
         console.error(
@@ -109,7 +111,7 @@ export async function PUT(request: NextRequest, context: Ctx) {
     return NextResponse.json({
       post,
       translating: true,
-      translateMode: bodyChanged ? 'full' : metaChanged ? 'meta' : 'missing-only',
+      translateMode: bodyChanged ? 'body-patch' : metaChanged ? 'meta' : 'missing-only',
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Update failed'
