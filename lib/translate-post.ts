@@ -1,5 +1,10 @@
 import { locales, localeLanguageNames, type AppLocale } from '@/i18n/locales'
-import { getPostById, getTranslationSibling, upsertLocaleSibling } from './posts'
+import {
+  getPostById,
+  getTranslationSibling,
+  updateLocaleSiblingMeta,
+  upsertLocaleSibling,
+} from './posts'
 import { openRouterChat } from './openrouter'
 import type { PostDetail, PostListItem, PostLocale } from './types'
 
@@ -37,7 +42,7 @@ function extractJsonObject(text: string): Record<string, unknown> {
   throw lastError instanceof Error ? lastError : new Error('Failed to parse translation JSON')
 }
 
-async function translateMeta(
+export async function translateMeta(
   source: Pick<PostDetail, 'title' | 'summary' | 'tags' | 'locale'>,
   target: PostLocale
 ): Promise<Pick<TranslatedFields, 'title' | 'summary' | 'tags'>> {
@@ -120,13 +125,60 @@ export type EnsureTranslationsResult = {
   errors?: Array<{ locale: AppLocale; error: string }>
 }
 
+/** Parallel OpenRouter calls per post. Override with TRANSLATE_CONCURRENCY (1–12). */
+function translateConcurrency(): number {
+  const raw = Number(process.env.TRANSLATE_CONCURRENCY || 5)
+  if (!Number.isFinite(raw)) return 5
+  return Math.min(12, Math.max(1, Math.floor(raw)))
+}
+
+async function mapPool<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  if (items.length === 0) return []
+  const results = new Array<R>(items.length)
+  let next = 0
+
+  async function run() {
+    while (true) {
+      const index = next++
+      if (index >= items.length) return
+      results[index] = await worker(items[index], index)
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => run())
+  await Promise.all(workers)
+  return results
+}
+
+export function metaSignature(
+  post: Pick<PostDetail | PostListItem, 'title' | 'summary' | 'tags'>
+): string {
+  const tags = [...(post.tags || [])].map(String).sort().join('\u0001')
+  return `${post.title || ''}\u0000${post.summary || ''}\u0000${tags}`
+}
+
 /**
  * Auto-translate a human-authored post into every other configured locale.
  * Skips when the post itself is an auto-translated sibling (locale !== sourceLocale).
+ *
+ * - Missing siblings: full translate
+ * - Existing + force: full re-translate
+ * - Existing + refreshMeta: re-translate title/summary/tags only (keep body)
+ *
+ * Locale targets run concurrently (default 5) to speed up multi-language fan-out.
  */
 export async function ensurePostTranslations(
   postId: string,
-  options?: { force?: boolean; targets?: PostLocale[] }
+  options?: {
+    force?: boolean
+    refreshMeta?: boolean
+    targets?: PostLocale[]
+    concurrency?: number
+  }
 ): Promise<EnsureTranslationsResult | null> {
   const source = await getPostById(postId)
   if (!source?._id) return null
@@ -140,28 +192,45 @@ export async function ensurePostTranslations(
   source.sourceLocale = sourceLocale
 
   const targets = (options?.targets || locales.filter((l) => l !== source.locale)) as PostLocale[]
-  const translations: PostListItem[] = []
-  const errors: Array<{ locale: AppLocale; error: string }> = []
+  const concurrency = options?.concurrency ?? translateConcurrency()
 
-  for (const target of targets) {
-    if (!options?.force) {
-      const existing = await getTranslationSibling(source, target, { includeDrafts: true })
-      if (existing) {
-        translations.push(existing)
-        continue
-      }
+  const settled = await mapPool(targets, concurrency, async (target) => {
+    const existing = await getTranslationSibling(source, target, { includeDrafts: true })
+
+    if (existing && !options?.force && !options?.refreshMeta) {
+      return { ok: true as const, translation: existing }
     }
 
     try {
+      if (existing && options?.refreshMeta && !options?.force) {
+        const meta = await translateMeta(source, target)
+        const sibling = await updateLocaleSiblingMeta(source, meta, target)
+        if (sibling) return { ok: true as const, translation: sibling }
+        return {
+          ok: false as const,
+          locale: target,
+          error: 'Failed to update translated metadata',
+        }
+      }
+
+      // Missing sibling, or force full re-translate.
       const translated = await translatePostFields(source, target)
       const sibling = await upsertLocaleSibling(source, translated, target)
-      translations.push(sibling)
+      return { ok: true as const, translation: sibling }
     } catch (error) {
-      errors.push({
+      return {
+        ok: false as const,
         locale: target,
         error: error instanceof Error ? error.message : 'failed',
-      })
+      }
     }
+  })
+
+  const translations: PostListItem[] = []
+  const errors: Array<{ locale: AppLocale; error: string }> = []
+  for (const item of settled) {
+    if (item.ok) translations.push(item.translation)
+    else errors.push({ locale: item.locale, error: item.error })
   }
 
   return { translations, errors: errors.length ? errors : undefined }

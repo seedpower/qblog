@@ -2,7 +2,7 @@ import { after, NextRequest, NextResponse } from 'next/server'
 import { defaultLocale, normalizeAppLocale } from '@/i18n/locales'
 import { requireAdmin } from '@/lib/auth'
 import { deletePostFamily, getPostById, updatePost } from '@/lib/posts'
-import { ensurePostTranslations } from '@/lib/translate-post'
+import { ensurePostTranslations, metaSignature } from '@/lib/translate-post'
 import type { PostInput } from '@/lib/types'
 
 function parsePostInput(body: Record<string, unknown>): PostInput {
@@ -70,6 +70,7 @@ export async function PUT(request: NextRequest, context: Ctx) {
   }
   try {
     const { id } = await context.params
+    const previous = await getPostById(id)
     const body = await request.json()
     const input = parsePostInput(body)
     if (!input.title || !input.slug) {
@@ -86,9 +87,17 @@ export async function PUT(request: NextRequest, context: Ctx) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
+    const metaChanged = !previous || metaSignature(previous) !== metaSignature(post)
+    const bodyChanged = !previous || (previous.body || '') !== (input.body || '')
+
     after(async () => {
       try {
-        await ensurePostTranslations(id)
+        // Re-translate existing siblings when source content changes.
+        // Meta-only edits refresh title/summary/tags without rewriting bodies.
+        await ensurePostTranslations(id, {
+          force: bodyChanged,
+          refreshMeta: metaChanged && !bodyChanged,
+        })
       } catch (error) {
         console.error(
           '[translate:background]',
@@ -97,7 +106,11 @@ export async function PUT(request: NextRequest, context: Ctx) {
       }
     })
 
-    return NextResponse.json({ post, translating: true })
+    return NextResponse.json({
+      post,
+      translating: true,
+      translateMode: bodyChanged ? 'full' : metaChanged ? 'meta' : 'missing-only',
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Update failed'
     return NextResponse.json({ error: message }, { status: 500 })

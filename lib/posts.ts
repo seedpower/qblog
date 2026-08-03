@@ -342,3 +342,49 @@ export async function upsertLocaleSibling(
   const inserted = await collection.insertOne(doc)
   return docToListItem({ ...doc, _id: inserted.insertedId })
 }
+
+/** Update translated metadata on an existing sibling; keeps body unchanged. */
+export async function updateLocaleSiblingMeta(
+  source: PostDetail,
+  translated: {
+    title: string
+    summary?: string
+    tags: string[]
+  },
+  targetLocale: PostLocale
+): Promise<PostListItem | null> {
+  const collection = await getPostsCollection()
+  const translationKey = source.translationKey || source.slug
+  const slug = normalizeSlug(source.slug)
+  const now = new Date()
+
+  const existing = await collection.findOne({ translationKey, locale: targetLocale })
+  if (!existing) return null
+
+  const result = await collection.findOneAndUpdate(
+    { _id: existing._id },
+    {
+      $set: {
+        title: translated.title,
+        slug,
+        path: `blog/${slug}`,
+        date: source.date,
+        lastmod: now.toISOString(),
+        tags: translated.tags?.length ? translated.tags : source.tags,
+        draft: source.draft,
+        summary: translated.summary || '',
+        images: source.images || [],
+        authors: source.authors?.length ? source.authors : ['default'],
+        layout: source.layout,
+        youtube: source.youtube,
+        locale: targetLocale,
+        translationKey,
+        sourceLocale: source.sourceLocale || source.locale,
+        updatedAt: now,
+      },
+    },
+    { returnDocument: 'after' }
+  )
+  if (!result) throw new Error('Failed to update translated metadata')
+  return docToListItem(result)
+}
