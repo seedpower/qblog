@@ -1,5 +1,8 @@
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
@@ -143,6 +146,63 @@ export async function listMedia(prefixInput = '') {
   return { prefix, folders, objects, publicBaseUrl: getR2PublicBaseUrl() }
 }
 
+/** List every object under a prefix (recursive, no delimiter). */
+export async function listAllMediaObjects(prefixInput = '') {
+  const prefix = sanitizePrefix(prefixInput)
+  const client = getR2Client()
+  const bucket = getR2BucketName()
+  const objects: MediaObject[] = []
+  let continuationToken: string | undefined
+
+  do {
+    const res = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+        MaxKeys: 500,
+      })
+    )
+
+    for (const item of res.Contents || []) {
+      if (!item.Key || item.Key === prefix || item.Key.endsWith('/')) continue
+      const key = sanitizeObjectKey(item.Key)
+      objects.push({
+        key,
+        name: key.slice(prefix.length),
+        size: item.Size || 0,
+        lastModified: item.LastModified?.toISOString(),
+        url: publicUrlForKey(key),
+        kind: mediaKindFromKey(key),
+      })
+    }
+
+    continuationToken = res.IsTruncated ? res.NextContinuationToken : undefined
+  } while (continuationToken)
+
+  objects.sort((a, b) => a.name.localeCompare(b.name))
+  return { prefix, objects }
+}
+
+export async function getMediaObjectBytes(keyInput: string) {
+  const key = sanitizeObjectKey(keyInput)
+  if (!key) throw new Error('Object key is required')
+  const client = getR2Client()
+  const res = await client.send(
+    new GetObjectCommand({
+      Bucket: getR2BucketName(),
+      Key: key,
+    })
+  )
+  const bytes = await res.Body?.transformToByteArray()
+  if (!bytes) throw new Error(`Empty object: ${key}`)
+  return {
+    key,
+    contentType: res.ContentType || 'application/octet-stream',
+    body: Buffer.from(bytes),
+  }
+}
+
 export async function uploadMediaObject(opts: {
   key: string
   body: Buffer
@@ -182,4 +242,82 @@ export async function deleteMediaObject(keyInput: string) {
     })
   )
   return { key }
+}
+
+async function mediaObjectExists(key: string) {
+  try {
+    await getR2Client().send(
+      new HeadObjectCommand({
+        Bucket: getR2BucketName(),
+        Key: key,
+      })
+    )
+    return true
+  } catch (error) {
+    const status = (error as { $metadata?: { httpStatusCode?: number }; name?: string })?.$metadata
+      ?.httpStatusCode
+    const name = (error as { name?: string })?.name
+    if (status === 404 || name === 'NotFound' || name === 'NoSuchKey') return false
+    throw error
+  }
+}
+
+/**
+ * Rename within the same folder by default (pass a bare filename as `newName`).
+ * Implemented as CopyObject + DeleteObject.
+ */
+export async function renameMediaObject(fromKeyInput: string, newNameInput: string) {
+  const fromKey = sanitizeObjectKey(fromKeyInput)
+  if (!fromKey) throw new Error('Source key is required')
+
+  const bareName = sanitizeObjectKey(newNameInput.split('/').pop() || newNameInput)
+  if (!bareName) throw new Error('New filename is required')
+  if (bareName.includes('/')) throw new Error('Invalid filename')
+
+  const dir = fromKey.includes('/') ? fromKey.slice(0, fromKey.lastIndexOf('/') + 1) : ''
+  const toKey = sanitizeObjectKey(`${dir}${bareName}`)
+  if (!toKey) throw new Error('Invalid destination key')
+  if (toKey === fromKey) {
+    return {
+      key: toKey,
+      name: bareName,
+      url: publicUrlForKey(toKey),
+      kind: mediaKindFromKey(toKey),
+      unchanged: true as const,
+    }
+  }
+
+  if (!(await mediaObjectExists(fromKey))) {
+    throw new Error('Source file not found')
+  }
+  if (await mediaObjectExists(toKey)) {
+    throw new Error(`Target already exists: ${bareName}`)
+  }
+
+  const bucket = getR2BucketName()
+  const client = getR2Client()
+  const copySource = `${bucket}/${fromKey.split('/').map(encodeURIComponent).join('/')}`
+
+  await client.send(
+    new CopyObjectCommand({
+      Bucket: bucket,
+      CopySource: copySource,
+      Key: toKey,
+    })
+  )
+  await client.send(
+    new DeleteObjectCommand({
+      Bucket: bucket,
+      Key: fromKey,
+    })
+  )
+
+  return {
+    key: toKey,
+    name: bareName,
+    url: publicUrlForKey(toKey),
+    kind: mediaKindFromKey(toKey),
+    fromKey,
+    unchanged: false as const,
+  }
 }

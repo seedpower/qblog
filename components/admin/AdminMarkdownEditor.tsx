@@ -358,6 +358,7 @@ export default function AdminMarkdownEditor({
   slug,
   fillHeight = false,
   onFileUploaded,
+  onFileRenamed,
   onMetaChange,
   onStatusChange,
 }: {
@@ -371,6 +372,8 @@ export default function AdminMarkdownEditor({
   fillHeight?: boolean
   /** Called after a successful upload (bare filename + kind) */
   onFileUploaded?: (filename: string, kind: 'image' | 'audio' | 'video' | 'other') => void
+  /** Called after a successful rename so the parent can update images[] / body refs */
+  onFileRenamed?: (fromName: string, toName: string) => void
   onMetaChange?: (meta: string) => void
   onStatusChange?: (status: { message: string; kind: 'ok' | 'error' | '' }) => void
 }) {
@@ -378,6 +381,7 @@ export default function AdminMarkdownEditor({
   const onChangeRef = useRef(onChange)
   const valueRef = useRef(value)
   const onFileUploadedRef = useRef(onFileUploaded)
+  const onFileRenamedRef = useRef(onFileRenamed)
   const onMetaChangeRef = useRef(onMetaChange)
   const onStatusChangeRef = useRef(onStatusChange)
   const pendingRef = useRef<PendingEdit | null>(null)
@@ -404,6 +408,7 @@ export default function AdminMarkdownEditor({
   >([])
   const selectionGhostPinnedRef = useRef(false)
   const [mediaBusy, setMediaBusy] = useState(false)
+  const [zipBusy, setZipBusy] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerItems, setPickerItems] = useState<
     { key: string; name: string; url: string; kind: string }[]
@@ -417,6 +422,7 @@ export default function AdminMarkdownEditor({
   onChangeRef.current = onChange
   valueRef.current = value
   onFileUploadedRef.current = onFileUploaded
+  onFileRenamedRef.current = onFileRenamed
   onMetaChangeRef.current = onMetaChange
   onStatusChangeRef.current = onStatusChange
 
@@ -1028,6 +1034,39 @@ export default function AdminMarkdownEditor({
     await loadFolder()
   }, [loadFolder, setEditorStatus, uploadPrefix])
 
+  const downloadFolderZip = useCallback(async () => {
+    if (!uploadPrefix) {
+      setEditorStatus('Set the post slug first.', 'error')
+      return
+    }
+    setZipBusy(true)
+    setEditorStatus('Packing folder…')
+    try {
+      const res = await fetch(
+        `/api/admin/media/?prefix=${encodeURIComponent(uploadPrefix)}&download=zip`
+      )
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Download failed')
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      const folderName = uploadPrefix.replace(/\/+$/, '').split('/').pop() || 'folder'
+      anchor.href = url
+      anchor.download = `${folderName}.zip`
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(url)
+      setEditorStatus(`Downloaded ${folderName}.zip`, 'ok')
+    } catch (err) {
+      setEditorStatus(err instanceof Error ? err.message : 'Download failed', 'error')
+    } finally {
+      setZipBusy(false)
+    }
+  }, [setEditorStatus, uploadPrefix])
+
   const uploadFiles = useCallback(
     async (files: File[], options?: { insert?: boolean; refresh?: boolean }) => {
       const shouldInsert = options?.insert !== false
@@ -1120,6 +1159,53 @@ export default function AdminMarkdownEditor({
       }
     },
     [loadFolder, setEditorStatus, uploadPrefix]
+  )
+
+  const rewriteBodyFilename = useCallback(
+    (fromName: string, toName: string) => {
+      if (!fromName || fromName === toName) return
+      const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const from = escape(fromName)
+      const body = valueRef.current
+      const next = body
+        .replace(new RegExp(`(!\\[[^\\]]*\\]\\()${from}(\\))`, 'g'), `$1${toName}$2`)
+        .replace(new RegExp(`(\\[[^\\]]*\\]\\()${from}(\\))`, 'g'), `$1${toName}$2`)
+        .replace(new RegExp(`(src=["'])${from}(["'])`, 'g'), `$1${toName}$2`)
+        .replace(new RegExp(`(href=["'])${from}(["'])`, 'g'), `$1${toName}$2`)
+      if (next === body) return
+      valueRef.current = next
+      onChangeRef.current(next)
+      updateMeta(next)
+    },
+    [updateMeta]
+  )
+
+  const renamePicked = useCallback(
+    async (item: { key: string; name: string }) => {
+      const nextName = window.prompt('Rename file to:', item.name)?.trim()
+      if (!nextName || nextName === item.name) return
+      if (/[\\/]/.test(nextName)) {
+        setEditorStatus('Filename cannot contain slashes.', 'error')
+        return
+      }
+      try {
+        const res = await fetch('/api/admin/media/', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: item.key, newName: nextName }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Rename failed')
+        const toName = String(data.name || nextName)
+        rewriteBodyFilename(item.name, toName)
+        onFileRenamedRef.current?.(item.name, toName)
+        setEditorStatus(`Renamed to ${toName}`, 'ok')
+        await loadFolder()
+      } catch (err) {
+        setEditorStatus(err instanceof Error ? err.message : 'Rename failed', 'error')
+      }
+    },
+    [loadFolder, rewriteBodyFilename, setEditorStatus]
   )
 
   useEffect(() => {
@@ -1389,6 +1475,14 @@ export default function AdminMarkdownEditor({
                   <button
                     type="button"
                     className="admin-md-media-btn"
+                    disabled={mediaBusy || zipBusy || pickerLoading || pickerItems.length === 0}
+                    onClick={() => void downloadFolderZip()}
+                  >
+                    {zipBusy ? 'Packing…' : 'Download zip'}
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-md-media-btn"
                     disabled={mediaBusy}
                     onClick={() => manageUploadRef.current?.click()}
                   >
@@ -1441,6 +1535,9 @@ export default function AdminMarkdownEditor({
                       <div className="admin-md-picker-actions">
                         <button type="button" onClick={() => insertPicked(item)}>
                           Insert
+                        </button>
+                        <button type="button" onClick={() => void renamePicked(item)}>
+                          Rename
                         </button>
                         <button type="button" onClick={() => void copyText('URL', item.url)}>
                           URL

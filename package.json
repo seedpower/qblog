@@ -32,6 +32,7 @@
     "hast-util-from-html-isomorphic": "^2.0.0",
     "image-size": "2.0.2",
     "jose": "^6.2.7",
+    "jszip": "^3.10.1",
     "medium-zoom": "^1.1.0",
     "mermaid": "^11.16.0",
     "mongodb": "^7.5.0",

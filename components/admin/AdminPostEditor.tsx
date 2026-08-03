@@ -417,6 +417,25 @@ export default function AdminPostEditor({
                   return { ...prev, images: [...list, filename].join(', ') }
                 })
               }}
+              onFileRenamed={(fromName, toName) => {
+                setForm((prev) => {
+                  const list = prev.images
+                    .split(',')
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                    .map((name) => (name === fromName ? toName : name))
+                  const unique = [...new Set(list)]
+                  return { ...prev, images: unique.join(', ') }
+                })
+                setCoverPreviewUrl((prev) => {
+                  if (!prev) return prev
+                  // Bust preview if the renamed file was the cover.
+                  if (prev.includes(fromName) || fromName === 'cover.webp' || fromName.startsWith('cover.')) {
+                    return ''
+                  }
+                  return prev
+                })
+              }}
             />
           </section>
         </div>
