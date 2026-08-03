@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "Hem",
+    "blog": "Blogg",
+    "apps": "Apps",
+    "about": "Om",
+    "admin": "Admin"
+  },
+  "home": {
+    "latest": "Senaste",
+    "noPosts": "Inga inlägg hittades.",
+    "allPosts": "Alla inlägg"
+  },
+  "blog": {
+    "title": "Blogg",
+    "allPosts": "Alla inlägg",
+    "search": "Sök artiklar",
+    "previous": "Föregående",
+    "next": "Nästa",
+    "previousArticle": "Föregående artikel",
+    "nextArticle": "Nästa artikel",
+    "backToBlog": "Tillbaka till bloggen",
+    "tags": "Taggar",
+    "authors": "Författare",
+    "publishedOn": "Publicerad den",
+    "discussOnX": "Diskutera på X",
+    "viewPost": "Visa inlägg: {title}",
+    "toc": "Innehållsförteckning"
+  },
+  "tags": {
+    "title": "Taggar",
+    "empty": "Inga taggar hittades.",
+    "viewTagged": "Visa inlägg taggade med {tag}"
+  },
+  "projects": {
+    "title": "Projekt",
+    "description": "Visa dina projekt med en hjältebild (16 x 9)"
+  },
+  "about": {
+    "title": "Om"
+  },
+  "common": {
+    "language": "Språk",
+    "toggleMenu": "Väx meny"
+  },
+  "site": {
+    "description": "Senaste tekniknyheterna, produktguider och livsanteckningar"
+  }
+}

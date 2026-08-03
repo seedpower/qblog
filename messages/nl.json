@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "Home",
+    "blog": "Blog",
+    "apps": "Apps",
+    "about": "Over",
+    "admin": "Admin"
+  },
+  "home": {
+    "latest": "Laatste",
+    "noPosts": "Geen berichten gevonden.",
+    "allPosts": "Alle berichten"
+  },
+  "blog": {
+    "title": "Blog",
+    "allPosts": "Alle berichten",
+    "search": "Zoek artikelen",
+    "previous": "Vorige",
+    "next": "Volgende",
+    "previousArticle": "Vorige artikel",
+    "nextArticle": "Volgend artikel",
+    "backToBlog": "Terug naar de blog",
+    "tags": "Tags",
+    "authors": "Auteurs",
+    "publishedOn": "Gepubliceerd op",
+    "discussOnX": "Bespreek op X",
+    "viewPost": "Bekijk bericht: {title}",
+    "toc": "Inhoud"
+  },
+  "tags": {
+    "title": "Tags",
+    "empty": "Geen tags gevonden.",
+    "viewTagged": "Bekijk berichten getagd met {tag}"
+  },
+  "projects": {
+    "title": "Projecten",
+    "description": "Toon je projecten met een hero afbeelding (16 x 9)"
+  },
+  "about": {
+    "title": "Over"
+  },
+  "common": {
+    "language": "Taal",
+    "toggleMenu": "Menu wisselen"
+  },
+  "site": {
+    "description": "Laatste tech nieuws, product tutorials en levensnotities"
+  }
+}

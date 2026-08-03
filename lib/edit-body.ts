@@ -1,3 +1,5 @@
+import { defaultLocale, localeLanguageNames, normalizeAppLocale } from '@/i18n/locales'
+import type { PostLocale } from './types'
 import { openRouterChat } from './openrouter'
 
 export type BodyEditAction =
@@ -71,7 +73,7 @@ export async function editPostBody(opts: {
   action: BodyEditAction
   instruction?: string
   selection?: string
-  locale?: 'zh-CN' | 'en'
+  locale?: PostLocale
 }): Promise<{ content: string; mode: 'full' | 'selection' | 'append' }> {
   // Do not trim the whole body — trailing newlines are part of document structure.
   const content = opts.content ?? ''
@@ -82,7 +84,8 @@ export async function editPostBody(opts: {
     throw new Error('Body is too long. Shorten to about 12,000 characters before AI edit.')
   }
 
-  const language = opts.locale === 'en' ? 'English' : 'Simplified Chinese'
+  const locale = normalizeAppLocale(opts.locale, defaultLocale)
+  const language = localeLanguageNames[locale] || locale
   // Keep selection exact (including whitespace / newlines). Trimming caused lost breaks.
   const selection = opts.selection ?? ''
   const custom = (opts.instruction || '').trim()

@@ -1,16 +1,20 @@
 import { defineRouting } from 'next-intl/routing'
+import { defaultLocale, isAppLocale, locales, type AppLocale } from './locales'
 
-export const locales = ['en', 'zh-CN'] as const
-export type AppLocale = (typeof locales)[number]
-export const defaultLocale: AppLocale = 'en'
+export { defaultLocale, isAppLocale, locales, type AppLocale }
+export {
+  localeLabels,
+  localeLanguageNames,
+  ogLocaleTags,
+  normalizeAppLocale,
+  pickSourceLocale,
+} from './locales'
 
 export const routing = defineRouting({
   locales,
   defaultLocale,
   localePrefix: 'as-needed',
-  localeDetection: true,
+  // URL is the source of truth so external links (e.g. SuperMark docs)
+  // can target a specific locale without Accept-Language / cookie overrides.
+  localeDetection: false,
 })
-
-export function isAppLocale(value: string): value is AppLocale {
-  return (locales as readonly string[]).includes(value)
-}

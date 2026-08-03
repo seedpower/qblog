@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "Etusivu",
+    "blog": "Blogi",
+    "apps": "Sovellukset",
+    "about": "Tietoa",
+    "admin": "Admin"
+  },
+  "home": {
+    "latest": "Uusimmat",
+    "noPosts": "Ei julkaisuja löytynyt.",
+    "allPosts": "Kaikki julkaisut"
+  },
+  "blog": {
+    "title": "Blogi",
+    "allPosts": "Kaikki julkaisut",
+    "search": "Hae artikkeleita",
+    "previous": "Edellinen",
+    "next": "Seuraava",
+    "previousArticle": "Edellinen artikkeli",
+    "nextArticle": "Seuraava artikkeli",
+    "backToBlog": "Takaisin blogiin",
+    "tags": "Tunnisteet",
+    "authors": "Kirjoittajat",
+    "publishedOn": "Julkaistu",
+    "discussOnX": "Keskustele X:ssä",
+    "viewPost": "Näytä julkaisu: {title}",
+    "toc": "Sisällysluettelo"
+  },
+  "tags": {
+    "title": "Tunnisteet",
+    "empty": "Ei tunnisteita löytynyt.",
+    "viewTagged": "Näytä julkaisut, joissa on tunniste {tag}"
+  },
+  "projects": {
+    "title": "Projektit",
+    "description": "Esittele projektisi sankarikuva (16 x 9)"
+  },
+  "about": {
+    "title": "Tietoa"
+  },
+  "common": {
+    "language": "Kieli",
+    "toggleMenu": "Vaihda valikkoa"
+  },
+  "site": {
+    "description": "Uusimmat teknologiauutiset, tuoteoppaat ja elämänmuistiinpanot"
+  }
+}

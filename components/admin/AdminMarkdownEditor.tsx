@@ -454,7 +454,7 @@ export default function AdminMarkdownEditor({
   value: string
   onChange: (value: string) => void
   title?: string
-  locale?: 'zh-CN' | 'en'
+  locale?: import('@/lib/types').PostLocale
   /** Post slug used as R2 folder: blog/{slug}/ */
   slug?: string
   /** Fill parent height instead of a viewport-based default */

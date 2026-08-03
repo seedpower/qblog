@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "Hjem",
+    "blog": "Blogg",
+    "apps": "Apps",
+    "about": "Om",
+    "admin": "Admin"
+  },
+  "home": {
+    "latest": "Siste",
+    "noPosts": "Ingen innlegg funnet.",
+    "allPosts": "Alle innlegg"
+  },
+  "blog": {
+    "title": "Blogg",
+    "allPosts": "Alle innlegg",
+    "search": "Søk etter artikler",
+    "previous": "Forrige",
+    "next": "Neste",
+    "previousArticle": "Forrige artikkel",
+    "nextArticle": "Neste artikkel",
+    "backToBlog": "Tilbake til bloggen",
+    "tags": "Tags",
+    "authors": "Forfattere",
+    "publishedOn": "Publisert den",
+    "discussOnX": "Diskuter på X",
+    "viewPost": "Se innlegg: {title}",
+    "toc": "Innholdsfortegnelse"
+  },
+  "tags": {
+    "title": "Tags",
+    "empty": "Ingen tags funnet.",
+    "viewTagged": "Se innlegg merket med {tag}"
+  },
+  "projects": {
+    "title": "Prosjekter",
+    "description": "Vis frem prosjektene dine med et hero-bilde (16 x 9)"
+  },
+  "about": {
+    "title": "Om"
+  },
+  "common": {
+    "language": "Språk",
+    "toggleMenu": "Bytt meny"
+  },
+  "site": {
+    "description": "Siste teknologinyheter, produktveiledninger og livsnotater"
+  }
+}

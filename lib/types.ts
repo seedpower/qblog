@@ -11,7 +11,10 @@ export type ReadingTime = {
   words: number
 }
 
-export type PostLocale = 'zh-CN' | 'en'
+import type { AppLocale } from '@/i18n/locales'
+
+/** Content locale — same set as app/UI locales. */
+export type PostLocale = AppLocale
 
 /** List/card view of a blog post (no body). */
 export type PostListItem = {

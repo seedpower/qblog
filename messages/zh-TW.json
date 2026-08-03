@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "首頁",
+    "blog": "部落格",
+    "apps": "Apps",
+    "about": "關於",
+    "admin": "Admin"
+  },
+  "home": {
+    "latest": "最新",
+    "noPosts": "未找到文章。",
+    "allPosts": "所有文章"
+  },
+  "blog": {
+    "title": "部落格",
+    "allPosts": "所有文章",
+    "search": "搜尋文章",
+    "previous": "上一頁",
+    "next": "下一頁",
+    "previousArticle": "上一篇文章",
+    "nextArticle": "下一篇文章",
+    "backToBlog": "返回部落格",
+    "tags": "標籤",
+    "authors": "作者",
+    "publishedOn": "發佈於",
+    "discussOnX": "在 X 討論",
+    "viewPost": "查看文章: {title}",
+    "toc": "目錄"
+  },
+  "tags": {
+    "title": "標籤",
+    "empty": "未找到標籤。",
+    "viewTagged": "查看標籤為 {tag} 的文章"
+  },
+  "projects": {
+    "title": "專案",
+    "description": "展示您的專案，搭配英雄圖片 (16 x 9)"
+  },
+  "about": {
+    "title": "關於"
+  },
+  "common": {
+    "language": "語言",
+    "toggleMenu": "切換選單"
+  },
+  "site": {
+    "description": "最新的科技新聞、產品教學和生活筆記"
+  }
+}

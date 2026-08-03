@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "Domů",
+    "blog": "Blog",
+    "apps": "Aplikace",
+    "about": "O nás",
+    "admin": "Admin"
+  },
+  "home": {
+    "latest": "Nejnovější",
+    "noPosts": "Žádné příspěvky nenalezeny.",
+    "allPosts": "Všechny příspěvky"
+  },
+  "blog": {
+    "title": "Blog",
+    "allPosts": "Všechny příspěvky",
+    "search": "Hledat články",
+    "previous": "Předchozí",
+    "next": "Další",
+    "previousArticle": "Předchozí článek",
+    "nextArticle": "Další článek",
+    "backToBlog": "Zpět na blog",
+    "tags": "Štítky",
+    "authors": "Autoři",
+    "publishedOn": "Publikováno dne",
+    "discussOnX": "Diskutovat na X",
+    "viewPost": "Zobrazit příspěvek: {title}",
+    "toc": "Obsah"
+  },
+  "tags": {
+    "title": "Štítky",
+    "empty": "Žádné štítky nenalezeny.",
+    "viewTagged": "Zobrazit příspěvky označené {tag}"
+  },
+  "projects": {
+    "title": "Projekty",
+    "description": "Představte své projekty s hrdinskou fotografií (16 x 9)"
+  },
+  "about": {
+    "title": "O nás"
+  },
+  "common": {
+    "language": "Jazyk",
+    "toggleMenu": "Přepnout menu"
+  },
+  "site": {
+    "description": "Nejnovější technologické zprávy, návody na produkty a životní poznámky"
+  }
+}

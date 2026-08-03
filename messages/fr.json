@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "blog": "Blog",
+    "apps": "Apps",
+    "about": "À propos",
+    "admin": "Admin"
+  },
+  "home": {
+    "latest": "Derniers",
+    "noPosts": "Aucun article trouvé.",
+    "allPosts": "Tous les articles"
+  },
+  "blog": {
+    "title": "Blog",
+    "allPosts": "Tous les articles",
+    "search": "Rechercher des articles",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "previousArticle": "Article précédent",
+    "nextArticle": "Article suivant",
+    "backToBlog": "Retour au blog",
+    "tags": "Tags",
+    "authors": "Auteurs",
+    "publishedOn": "Publié le",
+    "discussOnX": "Discuter sur X",
+    "viewPost": "Voir l'article : {title}",
+    "toc": "Table des matières"
+  },
+  "tags": {
+    "title": "Tags",
+    "empty": "Aucun tag trouvé.",
+    "viewTagged": "Voir les articles tagués {tag}"
+  },
+  "projects": {
+    "title": "Projets",
+    "description": "Présentez vos projets avec une image héro (16 x 9)"
+  },
+  "about": {
+    "title": "À propos"
+  },
+  "common": {
+    "language": "Langue",
+    "toggleMenu": "Basculer le menu"
+  },
+  "site": {
+    "description": "Dernières nouvelles tech, tutoriels de produits et notes de vie"
+  }
+}

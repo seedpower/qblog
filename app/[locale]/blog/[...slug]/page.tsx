@@ -11,7 +11,7 @@ import { notFound } from 'next/navigation'
 import { setRequestLocale } from 'next-intl/server'
 import { getAllPosts, getPostBySlug } from '@/lib/posts'
 import { getAuthorBySlug } from '@/lib/authors'
-import { defaultLocale, isAppLocale } from '@/i18n/routing'
+import { defaultLocale, isAppLocale, ogLocaleTags } from '@/i18n/routing'
 import AdminEditPostLink from '@/components/AdminEditPostLink'
 
 const defaultLayout = 'PostSimple'
@@ -51,7 +51,7 @@ export async function generateMetadata(props: {
       title: post.title,
       description: post.summary,
       siteName: siteMetadata.title,
-      locale: locale === 'en' ? 'en_US' : 'zh_CN',
+      locale: ogLocaleTags[locale] || ogLocaleTags[defaultLocale],
       type: 'article',
       publishedTime: publishedAt,
       modifiedTime: modifiedAt,

@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "ホーム",
+    "blog": "ブログ",
+    "apps": "Apps",
+    "about": "について",
+    "admin": "Admin"
+  },
+  "home": {
+    "latest": "最新",
+    "noPosts": "投稿が見つかりません。",
+    "allPosts": "すべての投稿"
+  },
+  "blog": {
+    "title": "ブログ",
+    "allPosts": "すべての投稿",
+    "search": "記事を検索",
+    "previous": "前へ",
+    "next": "次へ",
+    "previousArticle": "前の記事",
+    "nextArticle": "次の記事",
+    "backToBlog": "ブログに戻る",
+    "tags": "タグ",
+    "authors": "著者",
+    "publishedOn": "公開日",
+    "discussOnX": "Xで議論する",
+    "viewPost": "投稿を見る: {title}",
+    "toc": "目次"
+  },
+  "tags": {
+    "title": "タグ",
+    "empty": "タグが見つかりません。",
+    "viewTagged": "{tag} タグの投稿を見る"
+  },
+  "projects": {
+    "title": "プロジェクト",
+    "description": "ヒーロー画像（16 x 9）でプロジェクトを紹介"
+  },
+  "about": {
+    "title": "約"
+  },
+  "common": {
+    "language": "言語",
+    "toggleMenu": "メニューを切り替える"
+  },
+  "site": {
+    "description": "最新のテクノロジーニュース、製品チュートリアル、ライフノート"
+  }
+}

@@ -3,6 +3,7 @@ import readingTime from 'reading-time'
 import { slug as slugify } from 'github-slugger'
 import { extractTocHeadings } from 'pliny/mdx-plugins/index.js'
 import siteMetadata from '@/data/siteMetadata'
+import { defaultLocale, normalizeAppLocale } from '@/i18n/locales'
 import { resolveBlogImageSrc } from '@/utils/resolveBlogImageSrc'
 import { getPostsCollection, type PostDocument } from './mongodb'
 import type { PostDetail, PostInput, PostListItem, PostLocale, TocItem } from './types'
@@ -26,7 +27,7 @@ function coverFrom(images: string[], blogPath: string): string {
 }
 
 function normalizeLocale(value: unknown): PostLocale {
-  return value === 'en' ? 'en' : 'zh-CN'
+  return normalizeAppLocale(value, defaultLocale)
 }
 
 function docToListItem(doc: WithId<PostDocument>): PostListItem {
@@ -132,38 +133,65 @@ export async function getPostById(id: string): Promise<PostDetail | null> {
 
 export async function getTranslationSibling(
   post: Pick<PostListItem, 'translationKey' | 'locale' | 'slug'>,
-  targetLocale: PostLocale
+  targetLocale: PostLocale,
+  options?: { includeDrafts?: boolean }
 ): Promise<PostListItem | null> {
-  if (!post.translationKey || post.locale === targetLocale) return null
+  const translationKey = post.translationKey || post.slug
+  if (!translationKey || post.locale === targetLocale) return null
   const collection = await getPostsCollection()
-  const doc = await collection.findOne({
-    translationKey: post.translationKey,
+  const filter: Record<string, unknown> = {
+    translationKey,
     locale: targetLocale,
-    draft: { $ne: true },
-  })
+  }
+  if (!options?.includeDrafts) {
+    filter.draft = { $ne: true }
+  }
+  const doc = await collection.findOne(filter)
   return doc ? docToListItem(doc) : null
 }
 
 /**
- * Prefer the zh-CN source document id for admin editing.
- * Falls back to the current post id when no Chinese sibling exists.
+ * Prefer the human-authored source document id for admin editing.
+ * Falls back to zh-CN (legacy), then the current post id.
  */
-export async function getChineseSourcePostId(
-  post: Pick<PostListItem, '_id' | 'translationKey' | 'locale' | 'slug'>
+export async function getSourcePostId(
+  post: Pick<PostListItem, '_id' | 'translationKey' | 'locale' | 'slug' | 'sourceLocale'>
 ): Promise<string | undefined> {
   if (!post._id) return undefined
-  if (post.locale === 'zh-CN') return post._id
+
+  const preferred = post.sourceLocale || (post.locale === 'zh-CN' ? 'zh-CN' : null)
+  if (preferred && post.locale === preferred) return post._id
 
   const collection = await getPostsCollection()
   const translationKey = post.translationKey || post.slug
-  const filter: Record<string, unknown> = {
+
+  if (preferred) {
+    const localeFilter: Record<string, unknown> =
+      preferred === 'zh-CN'
+        ? { $or: [{ locale: 'zh-CN' }, { locale: { $exists: false } }, { locale: null }] }
+        : { locale: preferred }
+    const bySource = await collection.findOne({
+      $and: [{ $or: [{ translationKey }, { slug: post.slug }] }, localeFilter],
+    } as Record<string, unknown>)
+    if (bySource) return bySource._id.toString()
+  }
+
+  if (post.locale === 'zh-CN') return post._id
+
+  const zh = await collection.findOne({
     $and: [
       { $or: [{ translationKey }, { slug: post.slug }] },
       { $or: [{ locale: 'zh-CN' }, { locale: { $exists: false } }, { locale: null }] },
     ],
-  }
-  const doc = await collection.findOne(filter)
-  return doc ? doc._id.toString() : post._id
+  } as Record<string, unknown>)
+  return zh ? zh._id.toString() : post._id
+}
+
+/** @deprecated Use getSourcePostId */
+export async function getChineseSourcePostId(
+  post: Pick<PostListItem, '_id' | 'translationKey' | 'locale' | 'slug' | 'sourceLocale'>
+): Promise<string | undefined> {
+  return getSourcePostId(post)
 }
 
 export async function getPostsByTag(
@@ -271,10 +299,10 @@ export async function upsertLocaleSibling(
     summary?: string
     body: string
     tags: string[]
-  }
+  },
+  targetLocale: PostLocale
 ): Promise<PostListItem> {
   const collection = await getPostsCollection()
-  const targetLocale: PostLocale = source.locale === 'en' ? 'zh-CN' : 'en'
   const translationKey = source.translationKey || source.slug
   const slug = normalizeSlug(source.slug)
   const now = new Date()

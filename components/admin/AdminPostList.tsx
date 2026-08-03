@@ -3,12 +3,14 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { locales as allLocales, pickSourceLocale } from '@/i18n/locales'
 import type { PostListItem, PostLocale } from '@/lib/types'
 
 type PostGroup = {
   key: string
   primary: PostListItem
   locales: PostLocale[]
+  missing: PostLocale[]
 }
 
 function groupPosts(posts: PostListItem[]): PostGroup[] {
@@ -22,17 +24,14 @@ function groupPosts(posts: PostListItem[]): PostGroup[] {
 
   return Array.from(map.entries())
     .map(([key, group]) => {
-      const sourceLocale =
-        group.find((p) => p.sourceLocale)?.sourceLocale ||
-        group.find((p) => p.locale === 'zh-CN')?.locale ||
-        group[0]?.locale ||
-        'zh-CN'
+      const sourceLocale = pickSourceLocale(group)
       const primary =
         group.find((p) => p.locale === sourceLocale) ||
         group.find((p) => p.locale === 'zh-CN') ||
         group[0]
-      const locales = Array.from(new Set(group.map((p) => p.locale))).sort() as PostLocale[]
-      return { key, primary, locales }
+      const present = Array.from(new Set(group.map((p) => p.locale))).sort() as PostLocale[]
+      const missing = allLocales.filter((l) => !present.includes(l)) as PostLocale[]
+      return { key, primary, locales: present, missing }
     })
     .sort((a, b) => +new Date(b.primary.date) - +new Date(a.primary.date))
 }
@@ -54,7 +53,9 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
 
   async function translateAll() {
     if (
-      !confirm('Auto-translate all posts missing a pair via OpenRouter? This may take a while.')
+      !confirm(
+        'Auto-translate all posts into every missing language via OpenRouter? This may take a while.'
+      )
     ) {
       return
     }
@@ -64,7 +65,9 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
       alert(data.error || 'Translate failed')
       return
     }
-    alert(`Done. translated=${data.translated}, skipped=${data.skipped}, failed=${data.failed}`)
+    alert(
+      `Done. translated=${data.translated}, partial=${data.partial || 0}, skipped=${data.skipped}, failed=${data.failed}`
+    )
     router.refresh()
   }
 
@@ -119,7 +122,7 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
               </tr>
             </thead>
             <tbody>
-              {groups.map(({ key, primary, locales }) => (
+              {groups.map(({ key, primary, locales, missing }) => (
                 <tr
                   key={key}
                   className="border-t border-white/35 align-top transition hover:bg-white/35 dark:border-white/10 dark:hover:bg-white/5"
@@ -134,10 +137,16 @@ export default function AdminPostList({ posts }: { posts: PostListItem[] }) {
                         <span
                           key={locale}
                           className="glass glass-pill inline-flex px-2 py-0.5 text-xs font-medium text-[var(--ink-soft)]"
+                          title={locale}
                         >
                           {locale}
                         </span>
                       ))}
+                      {missing.length > 0 && (
+                        <span className="text-xs text-amber-700 dark:text-amber-400">
+                          +{missing.length} missing
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3">

@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
+import { locales, pickSourceLocale } from '@/i18n/locales'
 import { requireAdmin } from '@/lib/auth'
 import { getAllPosts } from '@/lib/posts'
-import { ensurePostTranslation } from '@/lib/translate-post'
+import { ensurePostTranslations } from '@/lib/translate-post'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
 /**
- * Translate all source-locale posts that don't yet have a paired translation,
- * or re-translate all when ?force=1.
+ * Translate all source-locale posts into every missing configured locale,
+ * or re-translate all targets when ?force=1.
  */
 export async function POST(request: Request) {
   if (!(await requireAdmin())) {
@@ -18,7 +19,6 @@ export async function POST(request: Request) {
   const force = new URL(request.url).searchParams.get('force') === '1'
   const posts = await getAllPosts({ includeDrafts: true })
 
-  // Prefer zh-CN as source when both exist; otherwise translate whichever is alone.
   const byKey = new Map<string, typeof posts>()
   for (const post of posts) {
     const key = post.translationKey || post.slug
@@ -27,26 +27,47 @@ export async function POST(request: Request) {
     byKey.set(key, list)
   }
 
-  const results: Array<{ key: string; status: string; error?: string }> = []
+  const results: Array<{
+    key: string
+    status: string
+    missing?: string[]
+    error?: string
+    errors?: Array<{ locale: string; error: string }>
+  }> = []
 
   for (const [key, group] of byKey) {
-    const hasZh = group.find((p) => p.locale === 'zh-CN')
-    const hasEn = group.find((p) => p.locale === 'en')
-    const source = hasZh || hasEn
+    const sourceLocale = pickSourceLocale(group)
+    const source = group.find((p) => p.locale === sourceLocale) || group[0]
     if (!source?._id) continue
 
-    if (!force && hasZh && hasEn) {
+    const present = new Set(group.map((p) => p.locale))
+    const missing = locales.filter((l) => l !== source.locale && !present.has(l))
+
+    if (!force && missing.length === 0) {
       results.push({ key, status: 'skipped' })
       continue
     }
 
     try {
-      await ensurePostTranslation(source._id)
-      results.push({ key, status: 'translated' })
+      const result = await ensurePostTranslations(source._id, {
+        force,
+        targets: force ? locales.filter((l) => l !== source.locale) : missing,
+      })
+      if (result?.errors?.length) {
+        results.push({
+          key,
+          status: 'partial',
+          missing,
+          errors: result.errors,
+        })
+      } else {
+        results.push({ key, status: 'translated', missing })
+      }
     } catch (error) {
       results.push({
         key,
         status: 'error',
+        missing,
         error: error instanceof Error ? error.message : 'failed',
       })
     }
@@ -55,6 +76,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     total: results.length,
     translated: results.filter((r) => r.status === 'translated').length,
+    partial: results.filter((r) => r.status === 'partial').length,
     skipped: results.filter((r) => r.status === 'skipped').length,
     failed: results.filter((r) => r.status === 'error').length,
     results,

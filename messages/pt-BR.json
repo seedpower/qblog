@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "Início",
+    "blog": "Blog",
+    "apps": "Apps",
+    "about": "Sobre",
+    "admin": "Admin"
+  },
+  "home": {
+    "latest": "Últimos",
+    "noPosts": "Nenhum post encontrado.",
+    "allPosts": "Todos os Posts"
+  },
+  "blog": {
+    "title": "Blog",
+    "allPosts": "Todos os Posts",
+    "search": "Pesquisar artigos",
+    "previous": "Anterior",
+    "next": "Próximo",
+    "previousArticle": "Artigo Anterior",
+    "nextArticle": "Próximo Artigo",
+    "backToBlog": "Voltar ao blog",
+    "tags": "Tags",
+    "authors": "Autores",
+    "publishedOn": "Publicado em",
+    "discussOnX": "Discutir no X",
+    "viewPost": "Ver post: {title}",
+    "toc": "Índice"
+  },
+  "tags": {
+    "title": "Tags",
+    "empty": "Nenhuma tag encontrada.",
+    "viewTagged": "Ver posts marcados com {tag}"
+  },
+  "projects": {
+    "title": "Projetos",
+    "description": "Mostre seus projetos com uma imagem de destaque (16 x 9)"
+  },
+  "about": {
+    "title": "Sobre"
+  },
+  "common": {
+    "language": "Idioma",
+    "toggleMenu": "Alternar Menu"
+  },
+  "site": {
+    "description": "Últimas notícias de tecnologia, tutoriais de produtos e anotações de vida"
+  }
+}

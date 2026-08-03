@@ -11,6 +11,7 @@
     "build": "cross-env INIT_CWD=$PWD next build",
     "serve": "next start",
     "seed": "node ./scripts/seed-posts.mjs",
+    "translate:ui": "node --env-file=.env.local ./scripts/translate-ui-messages.mjs",
     "analyze": "cross-env ANALYZE=true next build",
     "lint": "next lint --fix --dir pages --dir app --dir components --dir lib --dir layouts --dir scripts",
     "prepare": "husky"

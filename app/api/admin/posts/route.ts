@@ -1,7 +1,8 @@
 import { after, NextRequest, NextResponse } from 'next/server'
+import { defaultLocale, normalizeAppLocale } from '@/i18n/locales'
 import { requireAdmin } from '@/lib/auth'
 import { createPost, getAllPosts } from '@/lib/posts'
-import { ensurePostTranslation } from '@/lib/translate-post'
+import { ensurePostTranslations } from '@/lib/translate-post'
 import type { PostInput } from '@/lib/types'
 
 function parsePostInput(body: Record<string, unknown>): PostInput {
@@ -27,6 +28,9 @@ function parsePostInput(body: Record<string, unknown>): PostInput {
         ? imagesRaw.map(String)
         : []
 
+  const locale = normalizeAppLocale(body.locale, defaultLocale)
+  const sourceLocale = normalizeAppLocale(body.sourceLocale || body.locale, locale)
+
   return {
     title: String(body.title || ''),
     slug: String(body.slug || ''),
@@ -40,14 +44,9 @@ function parsePostInput(body: Record<string, unknown>): PostInput {
     layout: body.layout ? String(body.layout) : undefined,
     youtube: body.youtube ? String(body.youtube) : undefined,
     body: String(body.body || ''),
-    locale: body.locale === 'en' ? 'en' : 'zh-CN',
+    locale,
     translationKey: body.translationKey ? String(body.translationKey) : undefined,
-    sourceLocale:
-      body.sourceLocale === 'en' || body.sourceLocale === 'zh-CN'
-        ? body.sourceLocale
-        : body.locale === 'en'
-          ? 'en'
-          : 'zh-CN',
+    sourceLocale,
   }
 }
 
@@ -82,7 +81,7 @@ export async function POST(request: NextRequest) {
       const postId = post._id
       after(async () => {
         try {
-          await ensurePostTranslation(postId)
+          await ensurePostTranslations(postId)
         } catch (error) {
           console.error(
             '[translate:background]',

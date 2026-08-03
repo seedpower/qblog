@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "Ana Sayfa",
+    "blog": "Blog",
+    "apps": "Apps",
+    "about": "Hakkında",
+    "admin": "Admin"
+  },
+  "home": {
+    "latest": "Son",
+    "noPosts": "Hiçbir gönderi bulunamadı.",
+    "allPosts": "Tüm Gönderiler"
+  },
+  "blog": {
+    "title": "Blog",
+    "allPosts": "Tüm Gönderiler",
+    "search": "Makaleleri ara",
+    "previous": "Önceki",
+    "next": "Sonraki",
+    "previousArticle": "Önceki Makale",
+    "nextArticle": "Sonraki Makale",
+    "backToBlog": "Blog'a geri dön",
+    "tags": "Etiketler",
+    "authors": "Yazarlar",
+    "publishedOn": "Yayınlanma tarihi",
+    "discussOnX": "X üzerinde tartış",
+    "viewPost": "Gönderiyi görüntüle: {title}",
+    "toc": "İçindekiler"
+  },
+  "tags": {
+    "title": "Etiketler",
+    "empty": "Hiçbir etiket bulunamadı.",
+    "viewTagged": "{tag} etiketli gönderileri görüntüle"
+  },
+  "projects": {
+    "title": "Projeler",
+    "description": "Projelerinizi bir kahraman resmi ile sergileyin (16 x 9)"
+  },
+  "about": {
+    "title": "Hakkında"
+  },
+  "common": {
+    "language": "Dil",
+    "toggleMenu": "Menüyü Aç/Kapa"
+  },
+  "site": {
+    "description": "Son teknoloji haberleri, ürün eğitimleri ve yaşam notları"
+  }
+}

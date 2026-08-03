@@ -1,4 +1,5 @@
-import { getPostById, upsertLocaleSibling } from './posts'
+import { locales, localeLanguageNames, type AppLocale } from '@/i18n/locales'
+import { getPostById, getTranslationSibling, upsertLocaleSibling } from './posts'
 import { openRouterChat } from './openrouter'
 import type { PostDetail, PostListItem, PostLocale } from './types'
 
@@ -10,7 +11,7 @@ export type TranslatedFields = {
 }
 
 function languageName(locale: PostLocale) {
-  return locale === 'en' ? 'English' : 'Simplified Chinese'
+  return localeLanguageNames[locale] || locale
 }
 
 function extractJsonObject(text: string): Record<string, unknown> {
@@ -99,9 +100,12 @@ Rules:
 }
 
 export async function translatePostFields(
-  source: Pick<PostDetail, 'title' | 'summary' | 'body' | 'tags' | 'locale'>
+  source: Pick<PostDetail, 'title' | 'summary' | 'body' | 'tags' | 'locale'>,
+  target: PostLocale
 ): Promise<TranslatedFields> {
-  const target: PostLocale = source.locale === 'en' ? 'zh-CN' : 'en'
+  if (target === source.locale) {
+    throw new Error(`Cannot translate to the same locale (${target})`)
+  }
   const [meta, body] = await Promise.all([
     translateMeta(source, target),
     translateBody(source.body, source.locale, target),
@@ -110,26 +114,68 @@ export async function translatePostFields(
   return { ...meta, body }
 }
 
+export type EnsureTranslationsResult = {
+  translations: PostListItem[]
+  skipped?: boolean
+  errors?: Array<{ locale: AppLocale; error: string }>
+}
+
 /**
- * Auto-translate a human-authored post into the other locale.
+ * Auto-translate a human-authored post into every other configured locale.
  * Skips when the post itself is an auto-translated sibling (locale !== sourceLocale).
  */
-export async function ensurePostTranslation(postId: string): Promise<{
-  translation: PostListItem
-  skipped?: boolean
-} | null> {
+export async function ensurePostTranslations(
+  postId: string,
+  options?: { force?: boolean; targets?: PostLocale[] }
+): Promise<EnsureTranslationsResult | null> {
   const source = await getPostById(postId)
   if (!source?._id) return null
 
   const sourceLocale = source.sourceLocale || source.locale
   if (source.locale !== sourceLocale) {
-    return { translation: source, skipped: true }
+    return { translations: [source], skipped: true }
   }
 
   source.translationKey = source.translationKey || source.slug
   source.sourceLocale = sourceLocale
 
-  const translated = await translatePostFields(source)
-  const translation = await upsertLocaleSibling(source, translated)
-  return { translation }
+  const targets = (options?.targets || locales.filter((l) => l !== source.locale)) as PostLocale[]
+  const translations: PostListItem[] = []
+  const errors: Array<{ locale: AppLocale; error: string }> = []
+
+  for (const target of targets) {
+    if (!options?.force) {
+      const existing = await getTranslationSibling(source, target, { includeDrafts: true })
+      if (existing) {
+        translations.push(existing)
+        continue
+      }
+    }
+
+    try {
+      const translated = await translatePostFields(source, target)
+      const sibling = await upsertLocaleSibling(source, translated, target)
+      translations.push(sibling)
+    } catch (error) {
+      errors.push({
+        locale: target,
+        error: error instanceof Error ? error.message : 'failed',
+      })
+    }
+  }
+
+  return { translations, errors: errors.length ? errors : undefined }
+}
+
+/** @deprecated Use ensurePostTranslations */
+export async function ensurePostTranslation(postId: string): Promise<{
+  translation: PostListItem
+  skipped?: boolean
+} | null> {
+  const result = await ensurePostTranslations(postId)
+  if (!result) return null
+  return {
+    translation: result.translations[0] || (await getPostById(postId))!,
+    skipped: result.skipped,
+  }
 }

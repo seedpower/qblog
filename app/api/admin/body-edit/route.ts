@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { defaultLocale, normalizeAppLocale } from '@/i18n/locales'
 import { requireAdmin } from '@/lib/auth'
 import { editPostBody, type BodyEditAction } from '@/lib/edit-body'
 
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     action?: string
     instruction?: string
     selection?: string
-    locale?: 'zh-CN' | 'en'
+    locale?: string
   }
 
   try {
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
       action,
       instruction,
       selection: body.selection,
-      locale: body.locale,
+      locale: normalizeAppLocale(body.locale, defaultLocale),
     })
     return NextResponse.json(result)
   } catch (err) {

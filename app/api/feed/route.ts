@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { escape } from 'pliny/utils/htmlEscaper.js'
 import siteMetadata from '@/data/siteMetadata'
+import { defaultLocale, normalizeAppLocale } from '@/i18n/locales'
 import { getAllPosts, getTagCounts } from '@/lib/posts'
 import { slug } from 'github-slugger'
 
@@ -49,7 +50,7 @@ function generateRss(
 export async function GET(request: NextRequest) {
   const tag = request.nextUrl.searchParams.get('tag')
   const localeParam = request.nextUrl.searchParams.get('locale')
-  const locale = localeParam === 'zh-CN' ? 'zh-CN' : 'en'
+  const locale = normalizeAppLocale(localeParam, defaultLocale)
   const posts = await getAllPosts({ locale })
   const filtered = tag ? posts.filter((post) => post.tags.some((t) => slug(t) === tag)) : posts
 

@@ -2,7 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { PostDetail } from '@/lib/types'
+import { localeLabels, locales } from '@/i18n/locales'
+import type { PostDetail, PostLocale } from '@/lib/types'
 import AdminMarkdownEditor from '@/components/admin/AdminMarkdownEditor'
 import CoverWithTitle from '@/components/CoverWithTitle'
 import { generateTitleCoverFile, isGeneratedCoverName } from '@/utils/generateTitleCover'
@@ -19,7 +20,7 @@ type FormState = {
   youtube: string
   layout: string
   body: string
-  locale: 'zh-CN' | 'en'
+  locale: PostLocale
 }
 
 function toDateInput(value?: string) {
@@ -418,15 +419,17 @@ export default function AdminPostEditor({
               Source language
               <select
                 value={form.locale}
-                onChange={(e) => update('locale', e.target.value as 'zh-CN' | 'en')}
+                onChange={(e) => update('locale', e.target.value as PostLocale)}
                 className={fieldClass}
               >
-                <option value="zh-CN">中文 (zh-CN)</option>
-                <option value="en">English (en)</option>
+                {locales.map((code) => (
+                  <option key={code} value={code}>
+                    {localeLabels[code]} ({code})
+                  </option>
+                ))}
               </select>
               <span className="mt-1 block text-xs text-[var(--ink-soft)]">
-                Authors usually write in Chinese. Saving auto-translates the other locale via
-                OpenRouter.
+                Saving auto-translates this post into every other language via OpenRouter.
               </span>
             </label>
 

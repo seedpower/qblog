@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "Startseite",
+    "blog": "Blog",
+    "apps": "Apps",
+    "about": "Über",
+    "admin": "Admin"
+  },
+  "home": {
+    "latest": "Neueste",
+    "noPosts": "Keine Beiträge gefunden.",
+    "allPosts": "Alle Beiträge"
+  },
+  "blog": {
+    "title": "Blog",
+    "allPosts": "Alle Beiträge",
+    "search": "Artikel suchen",
+    "previous": "Vorherige",
+    "next": "Nächste",
+    "previousArticle": "Vorheriger Artikel",
+    "nextArticle": "Nächster Artikel",
+    "backToBlog": "Zurück zum Blog",
+    "tags": "Tags",
+    "authors": "Autoren",
+    "publishedOn": "Veröffentlicht am",
+    "discussOnX": "Diskutieren auf X",
+    "viewPost": "Beitrag ansehen: {title}",
+    "toc": "Inhaltsverzeichnis"
+  },
+  "tags": {
+    "title": "Tags",
+    "empty": "Keine Tags gefunden.",
+    "viewTagged": "Beiträge mit dem Tag {tag} anzeigen"
+  },
+  "projects": {
+    "title": "Projekte",
+    "description": "Präsentieren Sie Ihre Projekte mit einem Heldenbild (16 x 9)"
+  },
+  "about": {
+    "title": "Über"
+  },
+  "common": {
+    "language": "Sprache",
+    "toggleMenu": "Menü umschalten"
+  },
+  "site": {
+    "description": "Neueste Tech-Nachrichten, Produktanleitungen und Lebensnotizen"
+  }
+}

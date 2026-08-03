@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "홈",
+    "blog": "블로그",
+    "apps": "Apps",
+    "about": "소개",
+    "admin": "Admin"
+  },
+  "home": {
+    "latest": "최신",
+    "noPosts": "게시물이 없습니다.",
+    "allPosts": "모든 게시물"
+  },
+  "blog": {
+    "title": "블로그",
+    "allPosts": "모든 게시물",
+    "search": "기사 검색",
+    "previous": "이전",
+    "next": "다음",
+    "previousArticle": "이전 기사",
+    "nextArticle": "다음 기사",
+    "backToBlog": "블로그로 돌아가기",
+    "tags": "태그",
+    "authors": "저자",
+    "publishedOn": "게시일",
+    "discussOnX": "X에서 논의하기",
+    "viewPost": "게시물 보기: {title}",
+    "toc": "목차"
+  },
+  "tags": {
+    "title": "태그",
+    "empty": "태그가 없습니다.",
+    "viewTagged": "{tag} 태그가 있는 게시물 보기"
+  },
+  "projects": {
+    "title": "프로젝트",
+    "description": "히어로 이미지(16 x 9)로 프로젝트를 소개하세요."
+  },
+  "about": {
+    "title": "소개"
+  },
+  "common": {
+    "language": "언어",
+    "toggleMenu": "메뉴 전환"
+  },
+  "site": {
+    "description": "최신 기술 뉴스, 제품 튜토리얼 및 생활 노트"
+  }
+}

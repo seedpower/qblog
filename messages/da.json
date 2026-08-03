@@ -1,0 +1,49 @@
+{
+  "nav": {
+    "home": "Hjem",
+    "blog": "Blog",
+    "apps": "Apps",
+    "about": "Om",
+    "admin": "Admin"
+  },
+  "home": {
+    "latest": "Seneste",
+    "noPosts": "Ingen indlæg fundet.",
+    "allPosts": "Alle indlæg"
+  },
+  "blog": {
+    "title": "Blog",
+    "allPosts": "Alle indlæg",
+    "search": "Søg artikler",
+    "previous": "Forrige",
+    "next": "Næste",
+    "previousArticle": "Forrige artikel",
+    "nextArticle": "Næste artikel",
+    "backToBlog": "Tilbage til bloggen",
+    "tags": "Tags",
+    "authors": "Forfattere",
+    "publishedOn": "Udgivet den",
+    "discussOnX": "Diskuter på X",
+    "viewPost": "Se indlæg: {title}",
+    "toc": "Indholdsfortegnelse"
+  },
+  "tags": {
+    "title": "Tags",
+    "empty": "Ingen tags fundet.",
+    "viewTagged": "Se indlæg tagget med {tag}"
+  },
+  "projects": {
+    "title": "Projekter",
+    "description": "Vis dine projekter med et hero billede (16 x 9)"
+  },
+  "about": {
+    "title": "Om"
+  },
+  "common": {
+    "language": "Sprog",
+    "toggleMenu": "Skift menu"
+  },
+  "site": {
+    "description": "Seneste tech nyheder, produkt tutorials og livsnotater"
+  }
+}

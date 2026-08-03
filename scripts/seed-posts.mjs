@@ -104,9 +104,9 @@ async function main() {
       authors: Array.isArray(data.authors) ? data.authors : ['default'],
       layout: data.layout || undefined,
       youtube: data.youtube || undefined,
-      locale: data.locale === 'en' ? 'en' : 'zh-CN',
+      locale: data.locale || 'zh-CN',
       translationKey: data.translationKey || slug,
-      sourceLocale: data.sourceLocale === 'en' ? 'en' : data.locale === 'en' ? 'en' : 'zh-CN',
+      sourceLocale: data.sourceLocale || data.locale || 'zh-CN',
       body: content.trim(),
       updatedAt: now,
     }
