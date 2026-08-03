@@ -1005,22 +1005,22 @@ export default function AdminMarkdownEditor({
     [updateMeta]
   )
 
-  const loadFolder = useCallback(async () => {
+  const loadFolder = useCallback(async (opts?: { silent?: boolean }) => {
     if (!uploadPrefix) {
       setEditorStatus('Set the post slug first to browse blog/{slug}/.', 'error')
       return
     }
-    setPickerLoading(true)
+    if (!opts?.silent) setPickerLoading(true)
     try {
       const res = await fetch(`/api/admin/media/?prefix=${encodeURIComponent(uploadPrefix)}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to list files')
       setPickerItems(data.objects || [])
     } catch (err) {
-      setPickerItems([])
+      if (!opts?.silent) setPickerItems([])
       setEditorStatus(err instanceof Error ? err.message : 'Failed to list files', 'error')
     } finally {
-      setPickerLoading(false)
+      if (!opts?.silent) setPickerLoading(false)
     }
   }, [setEditorStatus, uploadPrefix])
 
@@ -1106,7 +1106,7 @@ export default function AdminMarkdownEditor({
           onFileUploadedRef.current?.(name, kind)
         }
         setEditorStatus(`Uploaded ${files.length} file(s) to ${uploadPrefix}`, 'ok')
-        if (shouldRefresh) await loadFolder()
+        if (shouldRefresh) await loadFolder({ silent: true })
       } catch (err) {
         setEditorStatus(err instanceof Error ? err.message : 'Upload failed', 'error')
       } finally {
@@ -1153,7 +1153,8 @@ export default function AdminMarkdownEditor({
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Delete failed')
         setEditorStatus(`Deleted ${item.name}`, 'ok')
-        await loadFolder()
+        setPickerItems((prev) => prev.filter((entry) => entry.key !== item.key))
+        await loadFolder({ silent: true })
       } catch (err) {
         setEditorStatus(err instanceof Error ? err.message : 'Delete failed', 'error')
       }
@@ -1181,7 +1182,7 @@ export default function AdminMarkdownEditor({
   )
 
   const renamePicked = useCallback(
-    async (item: { key: string; name: string }) => {
+    async (item: { key: string; name: string; url: string; kind: string }) => {
       const nextName = window.prompt('Rename file to:', item.name)?.trim()
       if (!nextName || nextName === item.name) return
       if (/[\\/]/.test(nextName)) {
@@ -1197,10 +1198,31 @@ export default function AdminMarkdownEditor({
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Rename failed')
         const toName = String(data.name || nextName)
+        const toKey = String(data.key || item.key)
+        const toUrl = String(data.url || item.url)
+        const toKind = String(data.kind || item.kind)
+
+        // Update the card in place — avoid full-grid Loading flash.
+        setPickerItems((prev) =>
+          [...prev]
+            .map((entry) =>
+              entry.key === item.key
+                ? {
+                    ...entry,
+                    key: toKey,
+                    name: toName,
+                    url: toUrl.includes('?') ? toUrl : `${toUrl}?v=${Date.now()}`,
+                    kind: toKind,
+                  }
+                : entry
+            )
+            .sort((a, b) => a.name.localeCompare(b.name))
+        )
+
         rewriteBodyFilename(item.name, toName)
         onFileRenamedRef.current?.(item.name, toName)
         setEditorStatus(`Renamed to ${toName}`, 'ok')
-        await loadFolder()
+        void loadFolder({ silent: true })
       } catch (err) {
         setEditorStatus(err instanceof Error ? err.message : 'Rename failed', 'error')
       }
@@ -1507,7 +1529,7 @@ export default function AdminMarkdownEditor({
                   />
                 </div>
               </div>
-              {pickerLoading ? (
+              {pickerLoading && pickerItems.length === 0 ? (
                 <p className="admin-md-picker-empty">Loading…</p>
               ) : pickerItems.length === 0 ? (
                 <p className="admin-md-picker-empty">
