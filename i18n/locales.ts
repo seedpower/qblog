@@ -32,7 +32,7 @@ export const localeLabels: Record<AppLocale, string> = {
   cs: 'Čeština',
   da: 'Dansk',
   de: 'Deutsch',
-  en: 'EN',
+  en: 'English',
   es: 'Español',
   fi: 'Suomi',
   fr: 'Français',
