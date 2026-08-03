@@ -37,6 +37,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               Media
             </Link>
             <Link
+              href="/admin/settings"
+              className="rounded-full px-3 py-1 text-sm text-[var(--ink-soft)] transition hover:bg-white/55 hover:text-[var(--ink)] dark:hover:bg-white/12"
+            >
+              Settings
+            </Link>
+            <Link
               href="/"
               className="rounded-full px-3 py-1 text-sm text-[var(--ink-soft)] transition hover:bg-white/55 hover:text-[var(--ink)] dark:hover:bg-white/12"
             >

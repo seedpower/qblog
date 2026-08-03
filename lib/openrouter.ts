@@ -1,3 +1,5 @@
+import { resolveOpenRouterConfig } from './settings'
+
 type ChatMessage = {
   role: 'system' | 'user' | 'assistant'
   content: string
@@ -20,12 +22,15 @@ export async function openRouterChat(options: {
   temperature?: number
   responseFormat?: 'json_object' | 'text'
 }): Promise<string> {
-  const apiKey = process.env.OPENROUTER_API_KEY
+  const config = await resolveOpenRouterConfig()
+  const apiKey = config.apiKey
   if (!apiKey) {
-    throw new Error('Missing OPENROUTER_API_KEY')
+    throw new Error(
+      'Missing OpenRouter API key. Set it in Admin → Settings or OPENROUTER_API_KEY env.'
+    )
   }
 
-  const model = options.model || process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini'
+  const model = options.model || config.model
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
