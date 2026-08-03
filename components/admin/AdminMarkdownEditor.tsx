@@ -1,10 +1,23 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from 'react'
 import { createPortal } from 'react-dom'
 import dynamic from 'next/dynamic'
 import { resolveBlogImageSrc } from '@/utils/resolveBlogImageSrc'
 import AdminMdPreviewCode from '@/components/admin/AdminMdPreviewCode'
+import AdminEditorTOC, {
+  extractEditorToc,
+  type EditorTocItem,
+} from '@/components/admin/AdminEditorTOC'
 import '@uiw/react-md-editor/markdown-editor.css'
 import '@/css/admin-markdown-editor.css'
 
@@ -128,6 +141,82 @@ function getTextareaCaretPoint(textarea: HTMLTextAreaElement, position: number) 
 
   document.body.removeChild(mirror)
   return { top, left, height: lineHeight }
+}
+
+/** Prefer `.w-md-editor-area` — the textarea itself is overflow:hidden and does not scroll. */
+function getEditorScrollParent(textarea: HTMLTextAreaElement): HTMLElement {
+  const area = textarea.closest('.w-md-editor-area')
+  if (area instanceof HTMLElement && area.scrollHeight > area.clientHeight + 1) {
+    return area
+  }
+  if (textarea.scrollHeight > textarea.clientHeight + 1) return textarea
+  let node: HTMLElement | null = textarea.parentElement
+  while (node && node !== document.body) {
+    const { overflowY } = window.getComputedStyle(node)
+    if (
+      (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') &&
+      node.scrollHeight > node.clientHeight + 1
+    ) {
+      return node
+    }
+    node = node.parentElement
+  }
+  return area instanceof HTMLElement ? area : textarea
+}
+
+/** Scroll the md-editor source pane so `position` is near the upper third of the view. */
+function scrollEditorToPosition(textarea: HTMLTextAreaElement, position: number) {
+  const scroller = getEditorScrollParent(textarea)
+  const point = getTextareaCaretPoint(textarea, position)
+  const rect = scroller.getBoundingClientRect()
+  const margin = Math.min(Math.max(scroller.clientHeight * 0.22, 48), 120)
+  const delta = point.top - (rect.top + margin)
+  scroller.scrollTop = Math.max(0, scroller.scrollTop + delta)
+}
+
+/**
+ * Programmatic source scrolls do not trigger uiw's edit↔preview sync
+ * (`active` stays on preview when TOC is clicked). Scroll preview by
+ * matching heading, with proportional scroll as fallback.
+ */
+function scrollPreviewToHeading(
+  root: HTMLElement | null,
+  item: EditorTocItem,
+  markdown: string
+) {
+  if (!root) return
+  const preview = root.querySelector('.w-md-editor-preview') as HTMLElement | null
+  if (!preview) return
+
+  const headings = Array.from(
+    preview.querySelectorAll('h1, h2, h3, h4, h5, h6')
+  ) as HTMLElement[]
+  const toc = extractEditorToc(markdown)
+  const tocIndex = toc.findIndex((t) => t.index === item.index && t.line === item.line)
+  let el = tocIndex >= 0 ? headings[tocIndex] : undefined
+
+  if (!el) {
+    const tag = `H${item.depth}`
+    el = headings.find(
+      (h) => h.tagName === tag && (h.textContent || '').trim() === item.value
+    )
+  }
+
+  if (el) {
+    const previewRect = preview.getBoundingClientRect()
+    const elRect = el.getBoundingClientRect()
+    const margin = Math.min(Math.max(preview.clientHeight * 0.22, 48), 120)
+    preview.scrollTop = Math.max(0, preview.scrollTop + (elRect.top - previewRect.top - margin))
+    return
+  }
+
+  const area = root.querySelector('.w-md-editor-area') as HTMLElement | null
+  if (!area) return
+  const textRange = area.scrollHeight - area.offsetHeight
+  const previewRange = preview.scrollHeight - preview.offsetHeight
+  if (textRange > 0 && previewRange > 0) {
+    preview.scrollTop = area.scrollTop / (textRange / previewRange)
+  }
 }
 
 type CaretPoint = { top: number; left: number; height: number }
@@ -396,6 +485,9 @@ export default function AdminMarkdownEditor({
   const caretRef = useRef<{ start: number; end: number } | null>(null)
 
   const [mounted, setMounted] = useState(false)
+  const [tocActiveIndex, setTocActiveIndex] = useState<number | undefined>()
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const deferredValue = useDeferredValue(value)
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const [bubbleStyle, setBubbleStyle] = useState<{ left: number; top: number }>({ left: 0, top: 0 })
   const [reviewVisible, setReviewVisible] = useState(false)
@@ -488,6 +580,39 @@ export default function AdminMarkdownEditor({
       onMetaChangeRef.current?.(next)
     },
     [getSelection, value]
+  )
+
+  const syncTocActive = useCallback((pos?: number) => {
+    const ta = getTextarea(wrapRef.current)
+    const caret = pos ?? ta?.selectionStart ?? caretRef.current?.start ?? 0
+    const items = extractEditorToc(valueRef.current)
+    let active: number | undefined
+    for (const item of items) {
+      if (item.index <= caret) active = item.index
+      else break
+    }
+    setTocActiveIndex(active)
+  }, [])
+
+  const jumpToTocHeading = useCallback(
+    (item: EditorTocItem) => {
+      const ta = getTextarea(wrapRef.current)
+      if (!ta) return
+      ta.focus()
+      ta.setSelectionRange(item.index, item.index)
+      caretRef.current = { start: item.index, end: item.index }
+      setTocActiveIndex(item.index)
+      updateMeta()
+      // Wait a frame so focus/layout settle, then scroll source + preview together.
+      requestAnimationFrame(() => {
+        const live = getTextarea(wrapRef.current)
+        if (!live) return
+        live.setSelectionRange(item.index, item.index)
+        scrollEditorToPosition(live, item.index)
+        scrollPreviewToHeading(wrapRef.current, item, valueRef.current)
+      })
+    },
+    [updateMeta]
   )
 
   const hideBubble = useCallback(() => {
@@ -834,6 +959,7 @@ export default function AdminMarkdownEditor({
     const syncFullscreen = () => {
       const on = Boolean(root.querySelector('.w-md-editor-fullscreen'))
       document.documentElement.classList.toggle('admin-md-fs', on)
+      setIsFullscreen(on)
     }
 
     const observer = new MutationObserver(syncFullscreen)
@@ -848,12 +974,14 @@ export default function AdminMarkdownEditor({
     return () => {
       observer.disconnect()
       document.documentElement.classList.remove('admin-md-fs')
+      setIsFullscreen(false)
     }
   }, [])
 
   useEffect(() => {
     updateMeta(value)
-  }, [updateMeta, value])
+    syncTocActive()
+  }, [updateMeta, syncTocActive, value])
 
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
@@ -861,6 +989,7 @@ export default function AdminMarkdownEditor({
       if (!root?.contains(e.target as Node)) return
       if (bubbleRef.current?.contains(e.target as Node)) return
       if (reviewRef.current?.contains(e.target as Node)) return
+      if ((e.target as HTMLElement | null)?.closest?.('.admin-md-toc')) return
       pointerDownRef.current = true
       hideBubble()
     }
@@ -895,6 +1024,8 @@ export default function AdminMarkdownEditor({
       if (hasSelectionSnap(getSelection())) positionBubble()
       else if (hasSelectionSnap(resolvePinnedSelection()) && bubbleVisible) positionBubble()
       if (selectionGhostPinnedRef.current) syncSelectionGhost()
+      const ta = getTextarea(wrapRef.current)
+      if (ta) syncTocActive(ta.selectionStart)
     }
 
     const onKeyUp = () => {
@@ -929,6 +1060,7 @@ export default function AdminMarkdownEditor({
     resolvePinnedSelection,
     scheduleBubble,
     syncSelectionGhost,
+    syncTocActive,
     updateMeta,
   ])
 
@@ -970,7 +1102,8 @@ export default function AdminMarkdownEditor({
     const ta = getTextarea(wrapRef.current)
     if (!ta) return
     caretRef.current = { start: ta.selectionStart, end: ta.selectionEnd }
-  }, [])
+    syncTocActive(ta.selectionStart)
+  }, [syncTocActive])
 
   const insertMarkdown = useCallback(
     (snippet: string, preferCaret = true) => {
@@ -1394,6 +1527,17 @@ export default function AdminMarkdownEditor({
         )
       : null
 
+  const tocNode = (
+    <AdminEditorTOC
+      markdown={deferredValue}
+      activeIndex={tocActiveIndex}
+      onJump={jumpToTocHeading}
+      fullscreen={isFullscreen}
+    />
+  )
+  const toc =
+    isFullscreen && mounted ? createPortal(tocNode, document.body) : tocNode
+
   return (
     <div
       ref={wrapRef}
@@ -1458,8 +1602,10 @@ export default function AdminMarkdownEditor({
           },
           onClick: rememberCaret,
           onKeyUp: rememberCaret,
+          onScroll: () => syncTocActive(),
         }}
       />
+      {toc}
       {selectionGhost}
       {bubble}
       {review}

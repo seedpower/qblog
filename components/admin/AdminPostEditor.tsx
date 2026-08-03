@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { PostDetail } from '@/lib/types'
 import AdminMarkdownEditor from '@/components/admin/AdminMarkdownEditor'
@@ -205,101 +205,178 @@ export default function AdminPostEditor({
     }
   }
 
+  const savePost = useCallback(
+    async (intent: 'publish' | 'draft' | 'save') => {
+      const stayOnPage = intent === 'save'
+      const asDraft = intent === 'publish' ? false : intent === 'draft' ? true : form.draft
+      if (!form.body.trim()) {
+        setError('Body is required')
+        return
+      }
+      if (saving !== null) return
+
+      setSaving(intent)
+      setError('')
+      setSaveStatus('')
+      try {
+        const slug = form.slug || titleHint
+        const payload = {
+          title: form.title,
+          slug,
+          date: new Date(form.date).toISOString(),
+          tags: form.tags,
+          draft: asDraft,
+          summary: form.summary,
+          images: form.images,
+          youtube: form.youtube || undefined,
+          layout: form.layout || undefined,
+          body: form.body,
+          authors: ['default'],
+          locale: form.locale,
+          sourceLocale: form.locale,
+        }
+        const res = await fetch(
+          isEdit ? `/api/admin/posts/${activePostId}/` : '/api/admin/posts/',
+          {
+            method: isEdit ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          }
+        )
+        const data = await res.json()
+        if (!res.ok) {
+          setError(data.error || 'Save failed')
+          return
+        }
+
+        const savedId = data.post?._id as string | undefined
+        const nextForm: FormState = {
+          ...form,
+          draft: asDraft,
+          slug: data.post?.slug || slug,
+        }
+        setForm(nextForm)
+        savedSnapshotRef.current = serializeForm(nextForm)
+
+        if (stayOnPage) {
+          if (savedId && savedId !== activePostId) {
+            setActivePostId(savedId)
+            // Keep the same editor instance so scroll/caret/AI UI are preserved.
+            window.history.replaceState(null, '', `/admin/posts/${savedId}`)
+          }
+          setSaveStatus(asDraft ? 'Saved as draft.' : 'Saved.')
+          window.setTimeout(() => setSaveStatus(''), 2500)
+          router.refresh()
+          return
+        }
+
+        router.replace('/admin')
+        router.refresh()
+      } catch {
+        setError('Save failed')
+      } finally {
+        setSaving(null)
+      }
+    },
+    [activePostId, form, isEdit, router, saving, titleHint]
+  )
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null
     const intent = (submitter?.value || 'save') as 'publish' | 'draft' | 'save'
-    const stayOnPage = intent === 'save'
-    const asDraft = intent === 'publish' ? false : intent === 'draft' ? true : form.draft
-    if (!form.body.trim()) {
-      setError('Body is required')
-      return
-    }
-    setSaving(intent)
-    setError('')
-    setSaveStatus('')
-    try {
-      const slug = form.slug || titleHint
-      const payload = {
-        title: form.title,
-        slug,
-        date: new Date(form.date).toISOString(),
-        tags: form.tags,
-        draft: asDraft,
-        summary: form.summary,
-        images: form.images,
-        youtube: form.youtube || undefined,
-        layout: form.layout || undefined,
-        body: form.body,
-        authors: ['default'],
-        locale: form.locale,
-        sourceLocale: form.locale,
-      }
-      const res = await fetch(
-        isEdit ? `/api/admin/posts/${activePostId}/` : '/api/admin/posts/',
-        {
-          method: isEdit ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        }
-      )
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Save failed')
-        return
-      }
-
-      const savedId = data.post?._id as string | undefined
-      const nextForm: FormState = {
-        ...form,
-        draft: asDraft,
-        slug: data.post?.slug || slug,
-      }
-      setForm(nextForm)
-      savedSnapshotRef.current = serializeForm(nextForm)
-
-      if (stayOnPage) {
-        if (savedId && savedId !== activePostId) {
-          setActivePostId(savedId)
-          // Keep the same editor instance so scroll/caret/AI UI are preserved.
-          window.history.replaceState(null, '', `/admin/posts/${savedId}`)
-        }
-        setSaveStatus(asDraft ? 'Saved as draft.' : 'Saved.')
-        window.setTimeout(() => setSaveStatus(''), 2500)
-        router.refresh()
-        return
-      }
-
-      router.replace('/admin')
-      router.refresh()
-    } catch {
-      setError('Save failed')
-    } finally {
-      setSaving(null)
-    }
+    await savePost(intent)
   }
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey)) return
+      if (event.key.toLowerCase() !== 's') return
+      // Ignore when a native dialog / IME composition might need the shortcut.
+      if (event.defaultPrevented || event.isComposing) return
+      event.preventDefault()
+      void savePost('save')
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [savePost])
 
   return (
     <div className="mx-auto w-full max-w-[96rem] px-2 py-6 sm:px-3 sm:py-8">
-      <div className="glass glass-card mb-4 flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
-        <h1 className="text-3xl font-bold tracking-tight text-[var(--ink)]">
-          {isEdit ? 'Edit post' : 'New post'}
-          {isDirty ? (
-            <span className="ml-2 align-middle text-sm font-medium text-amber-600 dark:text-amber-400">
-              · Unsaved
-            </span>
-          ) : null}
-        </h1>
-        <button
-          type="button"
-          onClick={leaveToAdmin}
-          className="glass glass-pill px-3 py-1.5 text-sm text-[var(--ink-soft)] transition hover:text-[var(--ink)]"
-        >
-          Back to list
-        </button>
-      </div>
-
       <form onSubmit={onSubmit} className="space-y-3">
+        <div className="glass flex flex-wrap items-center justify-end gap-3 rounded-[var(--radius-glass)] px-3 py-3 sm:px-4">
+          <div className="mr-auto flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+            {error && <p className="w-full text-sm text-red-600 sm:w-auto">{error}</p>}
+            <span className="text-xs font-medium text-[var(--ink-soft)]">
+              {form.draft ? 'Current: Draft' : 'Current: Published'}
+              {isDirty ? (
+                <span className="text-amber-600 dark:text-amber-400"> · Unsaved</span>
+              ) : null}
+            </span>
+            <span className="font-mono text-xs text-[var(--ink-soft)]">{editorMeta}</span>
+            {editorStatus.message ? (
+              <p
+                className={`admin-md-status m-0${editorStatus.kind ? ` ${editorStatus.kind}` : ''}`}
+                role="status"
+              >
+                {editorStatus.message}
+              </p>
+            ) : null}
+            {saveStatus && (
+              <span className="text-xs font-medium text-[#0f9f76]" role="status">
+                {saveStatus}
+              </span>
+            )}
+            {copyStatus && (
+              <span className="text-xs text-[var(--ink-soft)]" role="status">
+                {copyStatus}
+              </span>
+            )}
+          </div>
+          <button
+            type="submit"
+            name="intent"
+            value="save"
+            disabled={saving !== null}
+            title="Save (⌘S / Ctrl+S)"
+            className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)] disabled:opacity-60"
+          >
+            {saving === 'save' ? 'Saving…' : 'Save'}
+          </button>
+          <button
+            type="submit"
+            name="intent"
+            value="publish"
+            disabled={saving !== null}
+            className="via-primary-500 rounded-full bg-gradient-to-b from-[#3d9dff] to-[#0a76e6] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(10,132,255,0.35)] transition hover:-translate-y-0.5 disabled:opacity-60"
+          >
+            {saving === 'publish' ? 'Publishing…' : 'Publish'}
+          </button>
+          <button
+            type="submit"
+            name="intent"
+            value="draft"
+            disabled={saving !== null}
+            className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)] disabled:opacity-60"
+          >
+            {saving === 'draft' ? 'Saving…' : 'Save as Draft'}
+          </button>
+          <button
+            type="button"
+            onClick={copyBody}
+            className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)]"
+          >
+            Copy
+          </button>
+          <button
+            type="button"
+            onClick={leaveToAdmin}
+            className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)]"
+          >
+            Cancel
+          </button>
+        </div>
+
         <div className="grid gap-3 lg:grid-cols-[minmax(280px,22rem)_minmax(0,1fr)] lg:items-stretch lg:gap-4">
           <aside
             ref={asideRef}
@@ -473,76 +550,6 @@ export default function AdminPostEditor({
               }}
             />
           </section>
-        </div>
-
-        <div className="glass flex flex-wrap items-center justify-end gap-3 rounded-[var(--radius-glass)] px-3 py-3 sm:px-4">
-          <div className="mr-auto flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-            {error && <p className="w-full text-sm text-red-600 sm:w-auto">{error}</p>}
-            <span className="text-xs font-medium text-[var(--ink-soft)]">
-              {form.draft ? 'Current: Draft' : 'Current: Published'}
-              {isDirty ? ' · Unsaved changes' : ''}
-            </span>
-            <span className="font-mono text-xs text-[var(--ink-soft)]">{editorMeta}</span>
-            {editorStatus.message ? (
-              <p
-                className={`admin-md-status m-0${editorStatus.kind ? ` ${editorStatus.kind}` : ''}`}
-                role="status"
-              >
-                {editorStatus.message}
-              </p>
-            ) : null}
-            {saveStatus && (
-              <span className="text-xs font-medium text-[#0f9f76]" role="status">
-                {saveStatus}
-              </span>
-            )}
-            {copyStatus && (
-              <span className="text-xs text-[var(--ink-soft)]" role="status">
-                {copyStatus}
-              </span>
-            )}
-          </div>
-          <button
-            type="submit"
-            name="intent"
-            value="save"
-            disabled={saving !== null}
-            className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)] disabled:opacity-60"
-          >
-            {saving === 'save' ? 'Saving…' : 'Save'}
-          </button>
-          <button
-            type="submit"
-            name="intent"
-            value="publish"
-            disabled={saving !== null}
-            className="via-primary-500 rounded-full bg-gradient-to-b from-[#3d9dff] to-[#0a76e6] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(10,132,255,0.35)] transition hover:-translate-y-0.5 disabled:opacity-60"
-          >
-            {saving === 'publish' ? 'Publishing…' : 'Publish'}
-          </button>
-          <button
-            type="submit"
-            name="intent"
-            value="draft"
-            disabled={saving !== null}
-            className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)] disabled:opacity-60"
-          >
-            {saving === 'draft' ? 'Saving…' : 'Save as Draft'}
-          </button>
-          <button
-            type="button"
-            onClick={copyBody}
-            className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)]"
-          >
-            Copy
-          </button>
-          <button
-            type="button"
-            onClick={leaveToAdmin}
-            className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)]"
-          >
-            Cancel
-          </button>
         </div>
       </form>
     </div>

@@ -365,6 +365,146 @@ html.admin-md-fs .admin-md-compose {
   font-size: 0.875rem;
 }
 
+.admin-md-toc {
+  position: absolute;
+  top: 5.75rem;
+  right: 0.65rem;
+  left: auto;
+  z-index: 30;
+  width: min(13.5rem, calc(50% - 1.5rem));
+  max-height: min(52vh, 26rem);
+  display: flex;
+  flex-direction: column;
+  padding: 0.55rem 0.5rem 0.6rem;
+  border: 1px solid var(--glass-stroke);
+  border-radius: 14px;
+  background: color-mix(in srgb, white 88%, transparent);
+  box-shadow: 0 10px 28px rgba(18, 32, 28, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: auto;
+}
+
+/* Fullscreen editor is fixed z-index 200 — lift TOC above it via portal + fixed. */
+.admin-md-toc.admin-md-toc-fs {
+  position: fixed;
+  top: 3.35rem;
+  right: 0.75rem;
+  z-index: 210;
+  width: min(13.5rem, calc(50vw - 1.5rem));
+  max-height: min(60vh, 30rem);
+}
+
+.admin-md-toc.collapsed {
+  width: auto;
+  max-height: none;
+  padding: 0.35rem 0.45rem;
+}
+
+.admin-md-toc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.admin-md-toc.collapsed .admin-md-toc-head {
+  margin-bottom: 0;
+}
+
+.admin-md-toc-title {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.admin-md-toc-toggle {
+  flex: 0 0 auto;
+  width: 1.35rem;
+  height: 1.35rem;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--glass-stroke);
+  border-radius: 8px;
+  background: white;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-md-toc-toggle:hover {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--color-primary-500, #0a84ff) 40%, var(--glass-stroke));
+}
+
+.admin-md-toc-nav {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0 -0.15rem;
+  padding: 0 0.15rem;
+}
+
+.admin-md-toc-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.admin-md-toc-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.28rem 0.4rem;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.35;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-md-toc-link:hover {
+  background: color-mix(in srgb, var(--color-primary-500, #0a84ff) 10%, transparent);
+  color: var(--ink);
+}
+
+.admin-md-toc-link.active {
+  background: color-mix(in srgb, var(--color-primary-500, #0a84ff) 16%, transparent);
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.dark .admin-md-toc,
+html.dark .admin-md-toc {
+  background: color-mix(in srgb, #1a2220 88%, transparent);
+}
+
+.dark .admin-md-toc-toggle,
+html.dark .admin-md-toc-toggle {
+  background: color-mix(in srgb, #121816 90%, white);
+}
+
+@media (max-width: 900px) {
+  .admin-md-toc {
+    width: min(11.5rem, 42vw);
+    max-height: min(40vh, 18rem);
+    top: 5.25rem;
+  }
+}
+
 .admin-md-meta {
   margin: 0.25rem 0 0;
   color: var(--ink-soft);
