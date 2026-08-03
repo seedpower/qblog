@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import type { PostDetail } from '@/lib/types'
 import AdminMarkdownEditor from '@/components/admin/AdminMarkdownEditor'
 import CoverWithTitle from '@/components/CoverWithTitle'
@@ -44,6 +43,12 @@ function initialState(post?: PostDetail | null): FormState {
   }
 }
 
+function serializeForm(state: FormState) {
+  return JSON.stringify(state)
+}
+
+const LEAVE_MESSAGE = 'You have unsaved changes. Leave without saving?'
+
 const fieldClass =
   'glass-strong mt-1 w-full rounded-2xl border border-[var(--glass-stroke)] bg-[var(--control-fill)] px-3 py-2.5 text-[var(--ink)] outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-500/30'
 const labelClass = 'block text-sm font-medium text-[var(--ink-soft)]'
@@ -71,6 +76,8 @@ export default function AdminPostEditor({
   const [editorColumnHeight, setEditorColumnHeight] = useState<number | undefined>()
   const [activePostId, setActivePostId] = useState(postId)
   const asideRef = useRef<HTMLElement>(null)
+  const savedSnapshotRef = useRef(serializeForm(initialState(initialPost)))
+  const isDirty = serializeForm(form) !== savedSnapshotRef.current
   const isEdit = Boolean(activePostId)
 
   useEffect(() => {
@@ -90,6 +97,26 @@ export default function AdminPostEditor({
       mq.removeEventListener('change', sync)
     }
   }, [])
+
+  useEffect(() => {
+    if (!isDirty) return
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = LEAVE_MESSAGE
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [isDirty])
+
+  function confirmDiscard() {
+    if (!isDirty) return true
+    return window.confirm(LEAVE_MESSAGE)
+  }
+
+  function leaveToAdmin() {
+    if (!confirmDiscard()) return
+    router.push('/admin')
+  }
 
   const titleHint = useMemo(() => {
     if (form.slug || !form.title) return ''
@@ -223,11 +250,13 @@ export default function AdminPostEditor({
       }
 
       const savedId = data.post?._id as string | undefined
-      setForm((prev) => ({
-        ...prev,
+      const nextForm: FormState = {
+        ...form,
         draft: asDraft,
         slug: data.post?.slug || slug,
-      }))
+      }
+      setForm(nextForm)
+      savedSnapshotRef.current = serializeForm(nextForm)
 
       if (stayOnPage) {
         if (savedId && savedId !== activePostId) {
@@ -255,13 +284,19 @@ export default function AdminPostEditor({
       <div className="glass glass-card mb-4 flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
         <h1 className="text-3xl font-bold tracking-tight text-[var(--ink)]">
           {isEdit ? 'Edit post' : 'New post'}
+          {isDirty ? (
+            <span className="ml-2 align-middle text-sm font-medium text-amber-600 dark:text-amber-400">
+              · Unsaved
+            </span>
+          ) : null}
         </h1>
-        <Link
-          href="/admin"
+        <button
+          type="button"
+          onClick={leaveToAdmin}
           className="glass glass-pill px-3 py-1.5 text-sm text-[var(--ink-soft)] transition hover:text-[var(--ink)]"
         >
           Back to list
-        </Link>
+        </button>
       </div>
 
       <form onSubmit={onSubmit} className="space-y-3">
@@ -445,6 +480,7 @@ export default function AdminPostEditor({
             {error && <p className="w-full text-sm text-red-600 sm:w-auto">{error}</p>}
             <span className="text-xs font-medium text-[var(--ink-soft)]">
               {form.draft ? 'Current: Draft' : 'Current: Published'}
+              {isDirty ? ' · Unsaved changes' : ''}
             </span>
             <span className="font-mono text-xs text-[var(--ink-soft)]">{editorMeta}</span>
             {editorStatus.message ? (
@@ -500,12 +536,13 @@ export default function AdminPostEditor({
           >
             Copy
           </button>
-          <Link
-            href="/admin"
+          <button
+            type="button"
+            onClick={leaveToAdmin}
             className="glass glass-pill px-5 py-2.5 text-sm font-semibold text-[var(--ink-soft)] transition hover:text-[var(--ink)]"
           >
             Cancel
-          </Link>
+          </button>
         </div>
       </form>
     </div>
