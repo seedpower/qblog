@@ -12,6 +12,9 @@ import type { PostLocale } from '@/lib/types'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+sharp.cache({ memory: 16, files: 0, items: 20 })
+sharp.concurrency(1)
+
 const WIDTH = 1200
 const HEIGHT = 630
 
