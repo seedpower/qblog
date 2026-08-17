@@ -15,10 +15,10 @@ declare global {
 }
 
 const clientOptions: MongoClientOptions = {
-  // Railway private networking can flap briefly; prefer retry over hard fail.
-  maxPoolSize: 10,
+  // Single Railway replica: keep the pool tiny so idle sockets don't pin RSS.
+  maxPoolSize: 2,
   minPoolSize: 0,
-  maxIdleTimeMS: 60_000,
+  maxIdleTimeMS: 15_000,
   serverSelectionTimeoutMS: 10_000,
   connectTimeoutMS: 10_000,
   socketTimeoutMS: 45_000,

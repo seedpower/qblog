@@ -50,7 +50,7 @@ const securityHeaders = [
 
 const output = process.env.EXPORT ? 'export' : 'standalone'
 const basePath = process.env.BASE_PATH || undefined
-const unoptimized = process.env.UNOPTIMIZED ? true : undefined
+const unoptimized = true
 
 const staticCdnHostname = (() => {
   try {
@@ -70,6 +70,12 @@ module.exports = () => {
     basePath,
     reactStrictMode: true,
     trailingSlash: true,
+    // Cap Next's in-memory data/ISR cache (default 50MB, can grow RSS a lot on Railway).
+    cacheMaxMemorySize: 8 * 1024 * 1024,
+    serverExternalPackages: ['sharp', 'mongodb', 'jszip'],
+    experimental: {
+      optimizePackageImports: ['@aws-sdk/client-s3'],
+    },
     turbopack: {
       root: process.cwd(),
       rules: {

@@ -9,6 +9,6 @@ export default async function Page(props: { params: Promise<{ locale: string }> 
   const { locale } = await props.params
   const appLocale = isAppLocale(locale) ? locale : defaultLocale
   setRequestLocale(appLocale)
-  const posts = await getAllPosts({ locale: appLocale })
+  const posts = await getAllPosts({ locale: appLocale, limit: 10 })
   return <Main posts={posts} />
 }

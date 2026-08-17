@@ -37,11 +37,12 @@ export default async function TagPage(props: { params: Promise<{ locale: string;
   const filteredPosts = await getPostsByTag(tag, { locale })
   const tagCounts = await getTagCounts({ locale })
   const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE)
+  const initialDisplayPosts = filteredPosts.slice(0, POSTS_PER_PAGE)
 
   return (
     <ListLayout
-      posts={filteredPosts}
-      initialDisplayPosts={filteredPosts.slice(0, POSTS_PER_PAGE)}
+      posts={initialDisplayPosts}
+      initialDisplayPosts={initialDisplayPosts}
       pagination={{ currentPage: 1, totalPages }}
       title={title || t('allPosts')}
       tagCounts={tagCounts}

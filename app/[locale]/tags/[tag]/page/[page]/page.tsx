@@ -26,13 +26,15 @@ export default async function TagPage(props: {
     return notFound()
   }
 
+  const pagePosts = filteredPosts.slice(
+    POSTS_PER_PAGE * (pageNumber - 1),
+    POSTS_PER_PAGE * pageNumber
+  )
+
   return (
     <ListLayout
-      posts={filteredPosts}
-      initialDisplayPosts={filteredPosts.slice(
-        POSTS_PER_PAGE * (pageNumber - 1),
-        POSTS_PER_PAGE * pageNumber
-      )}
+      posts={pagePosts}
+      initialDisplayPosts={pagePosts}
       pagination={{ currentPage: pageNumber, totalPages }}
       title={title || t('allPosts')}
       tagCounts={tagCounts}

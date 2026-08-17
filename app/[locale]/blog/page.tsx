@@ -27,7 +27,7 @@ export default async function BlogPage(props: { params: Promise<{ locale: string
 
   return (
     <ListLayout
-      posts={posts}
+      posts={initialDisplayPosts}
       initialDisplayPosts={initialDisplayPosts}
       pagination={{ currentPage: 1, totalPages }}
       title={t('allPosts')}

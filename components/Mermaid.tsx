@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useRef } from 'react'
 import { useTheme } from 'next-themes'
-import mermaid from 'mermaid'
 import { getMermaidConfig } from './mermaidConfig'
 
 interface MermaidProps {
@@ -20,10 +19,11 @@ export default function Mermaid({ chart }: MermaidProps) {
 
     let cancelled = false
 
-    mermaid.initialize(getMermaidConfig(resolvedTheme === 'dark'))
-
     const renderChart = async () => {
       try {
+        const { default: mermaid } = await import('mermaid')
+        if (cancelled) return
+        mermaid.initialize(getMermaidConfig(resolvedTheme === 'dark'))
         const { svg } = await mermaid.render(`mermaid-${id}`, chart.trim())
         if (!cancelled) {
           container.innerHTML = svg

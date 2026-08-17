@@ -30,7 +30,7 @@ export default async function Page(props: { params: Promise<{ locale: string; pa
 
   return (
     <ListLayout
-      posts={posts}
+      posts={initialDisplayPosts}
       initialDisplayPosts={initialDisplayPosts}
       pagination={{ currentPage: pageNumber, totalPages }}
       title={t('allPosts')}

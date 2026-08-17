@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
 import siteMetadata from '@/data/siteMetadata'
-import { getPostBySlug } from '@/lib/posts'
+import { getPostCardBySlug } from '@/lib/posts'
 import { defaultLocale, isAppLocale } from '@/i18n/routing'
 import { resolveBlogImageSrc } from '@/utils/resolveBlogImageSrc'
 import type { PostLocale } from '@/lib/types'
@@ -48,7 +48,7 @@ function absoluteUrl(url: string) {
 }
 
 /**
- * next/og (Satori) is unreliable with remote WebP. Fetch/read + sharp → PNG data URL.
+ * next/og (Satori) is unreliable with remote WebP. Fetch/read + sharp → JPEG data URL.
  */
 async function loadCoverBytes(coverUrl: string): Promise<Buffer | null> {
   if (!coverUrl) return null
@@ -64,7 +64,8 @@ async function loadCoverBytes(coverUrl: string): Promise<Buffer | null> {
     }
     if (pathname.startsWith('/static/')) {
       const filePath = path.join(process.cwd(), 'public', pathname)
-      return await readFile(filePath)
+      const input = await readFile(filePath)
+      return input.byteLength >= 32 && input.byteLength <= 8 * 1024 * 1024 ? input : null
     }
   } catch {
     // fall through to network fetch
@@ -77,23 +78,23 @@ async function loadCoverBytes(coverUrl: string): Promise<Buffer | null> {
     })
     if (!res.ok) return null
     const input = Buffer.from(await res.arrayBuffer())
-    return input.byteLength >= 32 ? input : null
+    return input.byteLength >= 32 && input.byteLength <= 8 * 1024 * 1024 ? input : null
   } catch (error) {
     console.error('[og] cover fetch failed', coverUrl, error)
     return null
   }
 }
 
-async function toPngDataUrl(coverUrl: string): Promise<string | null> {
+async function toCoverDataUrl(coverUrl: string): Promise<string | null> {
   const input = await loadCoverBytes(coverUrl)
   if (!input) return null
   try {
-    const png = await sharp(input)
+    const jpeg = await sharp(input, { limitInputPixels: 268402689 })
       .rotate()
       .resize(WIDTH, HEIGHT, { fit: 'cover', position: 'centre' })
-      .png({ compressionLevel: 8 })
+      .jpeg({ quality: 82, mozjpeg: true })
       .toBuffer()
-    return `data:image/png;base64,${png.toString('base64')}`
+    return `data:image/jpeg;base64,${jpeg.toString('base64')}`
   } catch (error) {
     console.error('[og] cover convert failed', coverUrl, error)
     return null
@@ -171,7 +172,7 @@ export async function GET(request: NextRequest) {
   let coverUrl = ''
 
   if (slug) {
-    const post = await getPostBySlug(slug, { locale, includeDrafts: true })
+    const post = await getPostCardBySlug(slug, { locale, includeDrafts: true })
     if (post) {
       title = titleOverride || post.title
       const resolved = resolveBlogImageSrc(post.coverImage, post.path) || post.coverImage
@@ -185,7 +186,7 @@ export async function GET(request: NextRequest) {
 
   const [fontData, coverDataUrl] = await Promise.all([
     loadFontForText(title),
-    toPngDataUrl(coverUrl),
+    toCoverDataUrl(coverUrl),
   ])
 
   const fonts = fontData

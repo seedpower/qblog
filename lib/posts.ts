@@ -1,12 +1,24 @@
+import { cache } from 'react'
+import { revalidateTag, unstable_cache } from 'next/cache'
 import { ObjectId, type WithId } from 'mongodb'
-import readingTime from 'reading-time'
 import { slug as slugify } from 'github-slugger'
-import { extractTocHeadings } from 'pliny/mdx-plugins/index.js'
 import siteMetadata from '@/data/siteMetadata'
 import { defaultLocale, normalizeAppLocale } from '@/i18n/locales'
 import { resolveBlogImageSrc } from '@/utils/resolveBlogImageSrc'
 import { getPostsCollection, type PostDocument } from './mongodb'
-import type { PostDetail, PostInput, PostListItem, PostLocale, TocItem } from './types'
+import { extractTocHeadingsLite } from './toc'
+import type { PostDetail, PostInput, PostListItem, PostLocale } from './types'
+
+const POSTS_CACHE_TAG = 'posts'
+const LIST_PROJECTION = { body: 0 } as const
+
+function bumpPostsCache() {
+  try {
+    revalidateTag(POSTS_CACHE_TAG)
+  } catch {
+    // Scripts / seed can call mutations outside a request.
+  }
+}
 
 function toIso(value: string | Date | undefined): string | undefined {
   if (!value) return undefined
@@ -53,7 +65,6 @@ function docToListItem(doc: WithId<PostDocument>): PostListItem {
     sourceLocale: doc.sourceLocale
       ? normalizeLocale(doc.sourceLocale)
       : normalizeLocale(doc.locale),
-    readingTime: readingTime(doc.body || ''),
   }
 }
 
@@ -65,7 +76,7 @@ async function docToDetail(
   if (options?.resolveImages === false) {
     list.images = Array.isArray(doc.images) ? doc.images : []
   }
-  const toc = (await extractTocHeadings(doc.body || '')) as TocItem[]
+  const toc = extractTocHeadingsLite(doc.body || '')
   return {
     ...list,
     body: doc.body || '',
@@ -103,24 +114,114 @@ function buildFilter(options?: { includeDrafts?: boolean; locale?: PostLocale })
   return filter
 }
 
-export async function getAllPosts(options?: {
+async function loadListPosts(options?: {
   includeDrafts?: boolean
   locale?: PostLocale
 }): Promise<PostListItem[]> {
   const collection = await getPostsCollection()
-  const docs = await collection.find(buildFilter(options)).sort({ date: -1 }).toArray()
+  const docs = await collection
+    .find(buildFilter(options), { projection: LIST_PROJECTION })
+    .sort({ date: -1 })
+    .toArray()
   return docs.map(docToListItem)
 }
+
+const loadPublishedList = unstable_cache(
+  async (locale: string) =>
+    loadListPosts({
+      locale: locale ? (locale as PostLocale) : undefined,
+    }),
+  ['posts-published-list'],
+  { revalidate: 60, tags: [POSTS_CACHE_TAG] }
+)
+
+const loadPublishedTagCounts = unstable_cache(
+  async (locale: string) => {
+    const collection = await getPostsCollection()
+    const docs = await collection
+      .find(buildFilter({ locale: locale ? (locale as PostLocale) : undefined }), {
+        projection: { tags: 1 },
+      })
+      .toArray()
+    const counts: Record<string, number> = {}
+    for (const doc of docs) {
+      for (const tag of doc.tags || []) {
+        const key = slugify(tag)
+        counts[key] = (counts[key] || 0) + 1
+      }
+    }
+    return counts
+  },
+  ['posts-tag-counts'],
+  { revalidate: 60, tags: [POSTS_CACHE_TAG] }
+)
+
+const loadPublishedDetail = unstable_cache(
+  async (slug: string, locale: string) => {
+    const collection = await getPostsCollection()
+    const filter: Record<string, unknown> = {
+      slug,
+      ...buildFilter({ locale: locale as PostLocale }),
+    }
+    const doc = await collection.findOne(filter)
+    return doc ? docToDetail(doc) : null
+  },
+  ['posts-published-detail'],
+  { revalidate: 60, tags: [POSTS_CACHE_TAG] }
+)
+
+export async function getAllPosts(options?: {
+  includeDrafts?: boolean
+  locale?: PostLocale
+  limit?: number
+}): Promise<PostListItem[]> {
+  return getAllPostsMemo(
+    Boolean(options?.includeDrafts),
+    options?.locale || '',
+    options?.limit ?? 0
+  )
+}
+
+const getAllPostsMemo = cache(async (includeDrafts: boolean, locale: string, limit: number) => {
+  const posts = includeDrafts
+    ? await loadListPosts({
+        includeDrafts: true,
+        locale: locale ? (locale as PostLocale) : undefined,
+      })
+    : await loadPublishedList(locale)
+  return limit > 0 ? posts.slice(0, limit) : posts
+})
 
 export async function getPostBySlug(
   slug: string,
   options?: { includeDrafts?: boolean; locale?: PostLocale }
 ): Promise<PostDetail | null> {
+  return getPostBySlugMemo(slug, Boolean(options?.includeDrafts), options?.locale || defaultLocale)
+}
+
+const getPostBySlugMemo = cache(async (slug: string, includeDrafts: boolean, locale: string) => {
+  if (!includeDrafts) {
+    return loadPublishedDetail(slug, locale)
+  }
   const collection = await getPostsCollection()
-  const filter: Record<string, unknown> = { slug, ...buildFilter(options) }
+  const filter: Record<string, unknown> = {
+    slug,
+    ...buildFilter({ includeDrafts: true, locale: locale as PostLocale }),
+  }
   const doc = await collection.findOne(filter)
   if (!doc) return null
   return docToDetail(doc)
+})
+
+/** List fields only — used by OG so we never load MDX body for social cards. */
+export async function getPostCardBySlug(
+  slug: string,
+  options?: { includeDrafts?: boolean; locale?: PostLocale }
+): Promise<PostListItem | null> {
+  const collection = await getPostsCollection()
+  const filter: Record<string, unknown> = { slug, ...buildFilter(options) }
+  const doc = await collection.findOne(filter, { projection: LIST_PROJECTION })
+  return doc ? docToListItem(doc) : null
 }
 
 export async function getPostById(id: string): Promise<PostDetail | null> {
@@ -205,15 +306,7 @@ export async function getPostsByTag(
 export async function getTagCounts(options?: {
   locale?: PostLocale
 }): Promise<Record<string, number>> {
-  const posts = await getAllPosts(options)
-  const counts: Record<string, number> = {}
-  for (const post of posts) {
-    for (const tag of post.tags) {
-      const key = slugify(tag)
-      counts[key] = (counts[key] || 0) + 1
-    }
-  }
-  return counts
+  return loadPublishedTagCounts(options?.locale || '')
 }
 
 export function normalizeSlug(input: string): string {
@@ -242,6 +335,7 @@ export async function createPost(input: PostInput): Promise<PostListItem> {
     updatedAt: now,
   }
   const result = await collection.insertOne(doc)
+  bumpPostsCache()
   return docToListItem({ ...doc, _id: result.insertedId })
 }
 
@@ -268,6 +362,7 @@ export async function updatePost(id: string, input: PostInput): Promise<PostList
     { returnDocument: 'after' }
   )
   if (!result) return null
+  bumpPostsCache()
   return docToListItem(result)
 }
 
@@ -275,6 +370,7 @@ export async function deletePost(id: string): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false
   const collection = await getPostsCollection()
   const result = await collection.deleteOne({ _id: new ObjectId(id) })
+  if (result.deletedCount === 1) bumpPostsCache()
   return result.deletedCount === 1
 }
 
@@ -289,6 +385,7 @@ export async function deletePostFamily(id: string): Promise<number> {
   const result = await collection.deleteMany({
     $or: [{ translationKey }, { slug: post.slug }],
   })
+  if (result.deletedCount) bumpPostsCache()
   return result.deletedCount
 }
 
@@ -335,11 +432,13 @@ export async function upsertLocaleSibling(
       { returnDocument: 'after' }
     )
     if (!result) throw new Error('Failed to update translated post')
+    bumpPostsCache()
     return docToListItem(result)
   }
 
   const doc = { ...payload, createdAt: now }
   const inserted = await collection.insertOne(doc)
+  bumpPostsCache()
   return docToListItem({ ...doc, _id: inserted.insertedId })
 }
 
@@ -386,5 +485,6 @@ export async function updateLocaleSiblingMeta(
     { returnDocument: 'after' }
   )
   if (!result) throw new Error('Failed to update translated metadata')
+  bumpPostsCache()
   return docToListItem(result)
 }
