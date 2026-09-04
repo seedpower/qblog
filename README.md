@@ -124,4 +124,6 @@ scripts/       # seed, translate, RSS helpers
 
 ## License
 
-MIT. Derived from [tailwind-nextjs-starter-blog](https://github.com/timlrx/tailwind-nextjs-starter-blog); QBlog adds MongoDB CMS, admin, i18n, AI translation, and R2 media.
+[MIT](LICENSE) — Copyright (c) 2026 Seedpower; Copyright (c) 2021-2025 Timothy Lin.
+
+Derived from [tailwind-nextjs-starter-blog](https://github.com/timlrx/tailwind-nextjs-starter-blog). QBlog adds MongoDB CMS, admin, i18n, AI translation, and R2 media.
