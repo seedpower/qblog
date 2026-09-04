@@ -124,4 +124,6 @@ scripts/       # 种子数据、翻译、RSS 等脚本
 
 ## 许可证
 
-MIT。基于 [tailwind-nextjs-starter-blog](https://github.com/timlrx/tailwind-nextjs-starter-blog) 发展而来；QBlog 增加了 MongoDB CMS、管理后台、国际化、AI 翻译与 R2 媒体能力。
+[MIT](LICENSE) — Copyright (c) 2026 Seedpower；Copyright (c) 2021-2025 Timothy Lin。
+
+基于 [tailwind-nextjs-starter-blog](https://github.com/timlrx/tailwind-nextjs-starter-blog) 发展而来。QBlog 增加了 MongoDB CMS、管理后台、国际化、AI 翻译与 R2 媒体能力。
